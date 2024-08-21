@@ -1,0 +1,20 @@
+@import url("https://cdn.jsdelivr.net/gh/jgthms/minireset.css@master/minireset.min.css");
+
+.rank {
+    display: flex;
+    justify-content: center;
+}
+
+.square {
+    width: 64px;
+    height: 64px;
+    display: inline-block;
+}
+
+.b {
+    background-color: #b58863;
+}
+
+.w {
+    background-color: #f0d9b5;
+}
