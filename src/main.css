@@ -18,3 +18,11 @@
 .w {
     background-color: #f0d9b5;
 }
+
+.b-selected {
+    background-color: #646d40;
+}
+
+.w-selected {
+    background-color: #819669;
+}
