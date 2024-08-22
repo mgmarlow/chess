@@ -7,7 +7,7 @@ import {
   VNode,
 } from "snabbdom";
 import "./main.css";
-import Chess, { Square, PieceSquare, Color } from "./chess";
+import Chess, { Square, Piece, Color } from "./chess";
 
 interface Data {
   chess: Chess;
@@ -26,21 +26,24 @@ const patch = init([classModule, propsModule, eventListenersModule]);
 const hSquare = (sq: Square, bg: Color) => {
   const isSelected = data?.selected === sq.square
 
-  const img = ({ type, color }: PieceSquare) =>
+  const img = ({ type, color }: Piece) =>
     `/caliente/${type.toLowerCase()}${color}.svg`;
 
   const contents =
-    sq.kind === "piece" ? [h("img", { props: { src: img(sq) } })] : undefined;
+    sq.kind === "piece" ? [h("img", { props: { src: img(sq.piece) } })] : undefined;
 
   return h(
     `div.square.${bg}${isSelected ? ".selected" : ""}`,
     {
       on: {
         click: () => {
-          if (sq.kind === "piece") {
+          if (data.selected) {
+            data.chess.move(data.selected, sq.square);
+            data.selected = undefined;
+          } else if (sq.kind === "piece") {
             data.selected = sq.square;
           }
-          console.log(sq.square);
+
           render();
         },
       },
