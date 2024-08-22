@@ -16,17 +16,19 @@ const isColor = (str: string): str is Color => str === "w" || str === "b";
 // chess.js represents empty squares as null, but that's kind of
 // annoying since it loses information about the square rank and
 // file. Instead, use a discriminated union.
-export type Square =
-  | {
-      kind: "piece";
-      square: string;
-      type: Piece;
-      color: Color;
-    }
-  | {
-      kind: "empty";
-      square: string;
-    };
+export interface PieceSquare {
+  kind: "piece";
+  square: string;
+  type: Piece;
+  color: Color;
+}
+
+export interface EmptySquare {
+  kind: "empty";
+  square: string;
+}
+
+export type Square = PieceSquare | EmptySquare;
 
 // TODO: castling and enpassant.
 interface FenResult {
@@ -47,7 +49,7 @@ export const parseFen = (fen: string): FenResult => {
   const squares: Square[][] = [];
   let row: Square[] = [];
 
-  const coord = (row: number, ci: number) => "abcdefgh"[ci] + `${row + 1}`;
+  const coord = (row: number, ci: number) => "abcdefgh"[ci] + `${8 - row}`;
 
   const flush = () => {
     squares.push(row);
@@ -100,3 +102,18 @@ export const parseFen = (fen: string): FenResult => {
     fullmove: parseInt(fullmove),
   };
 };
+
+class Chess {
+  public squares: Square[][];
+
+  constructor(fen: string) {
+    const { squares } = parseFen(fen);
+    this.squares = squares;
+  }
+
+  get fen(): string {
+    return "";
+  }
+}
+
+export default Chess;
