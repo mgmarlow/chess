@@ -11,18 +11,7 @@
     display: inline-block;
 }
 
-.b {
-    background-color: #b58863;
-}
-
-.w {
-    background-color: #f0d9b5;
-}
-
-.b-selected {
-    background-color: #646d40;
-}
-
-.w-selected {
-    background-color: #819669;
-}
+.b          { background-color: #b58863; }
+.b.selected { background-color: #646d40; }
+.w          { background-color: #f0d9b5; }
+.w.selected { background-color: #819669; }

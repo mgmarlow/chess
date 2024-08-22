@@ -53,7 +53,7 @@ export const parseFen = (fen: string): FenResult => {
 
   const coord = (row: number, ci: number) => "abcdefgh"[ci] + `${8 - row}`;
 
-  const squares = components
+  const squares: Square[][] = components
     .map((rank) => rank.split(""))
     .map((rankarr, rowi) =>
       rankarr.reduce((acc, cmp, ci) => {
@@ -77,7 +77,7 @@ export const parseFen = (fen: string): FenResult => {
         }
 
         return acc;
-      }, [])
+      }, [] as Square[])
     );
 
   return {
@@ -94,10 +94,6 @@ class Chess {
   constructor(fen: string = INITIAL_BOARD_FEN) {
     const { squares } = parseFen(fen);
     this.squares = squares;
-  }
-
-  get fen(): string {
-    return "";
   }
 }
 

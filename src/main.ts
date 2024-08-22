@@ -24,10 +24,7 @@ const render = () => {
 const patch = init([classModule, propsModule, eventListenersModule]);
 
 const hSquare = (sq: Square, bg: Color) => {
-  let bgClass: string = bg;
-  if (data?.selected === sq.square) {
-    bgClass = bg === "w" ? "w-selected" : "b-selected";
-  }
+  const isSelected = data?.selected === sq.square
 
   const img = ({ type, color }: PieceSquare) =>
     `/caliente/${type.toLowerCase()}${color}.svg`;
@@ -36,7 +33,7 @@ const hSquare = (sq: Square, bg: Color) => {
     sq.kind === "piece" ? [h("img", { props: { src: img(sq) } })] : undefined;
 
   return h(
-    `div.square.${bgClass}`,
+    `div.square.${bg}${isSelected ? ".selected" : ""}`,
     {
       on: {
         click: () => {
