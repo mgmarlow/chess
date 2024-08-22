@@ -7,14 +7,14 @@ import {
   VNode,
 } from "snabbdom";
 import "./main.css";
-import Chess, { Square, PieceSquare, Color, INITIAL_BOARD_FEN } from "./chess";
+import Chess, { Square, PieceSquare, Color } from "./chess";
 
 interface Data {
   chess: Chess;
   selected?: string;
 }
 
-let data: Data = { chess: new Chess(INITIAL_BOARD_FEN) };
+let data: Data = { chess: new Chess() };
 let vnode: VNode;
 
 const render = () => {

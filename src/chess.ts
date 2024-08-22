@@ -106,7 +106,7 @@ export const parseFen = (fen: string): FenResult => {
 class Chess {
   public squares: Square[][];
 
-  constructor(fen: string) {
+  constructor(fen: string = INITIAL_BOARD_FEN) {
     const { squares } = parseFen(fen);
     this.squares = squares;
   }
