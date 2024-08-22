@@ -46,54 +46,39 @@ export const parseFen = (fen: string): FenResult => {
     throw new Error("invalid FEN");
   }
 
-  const squares: Square[][] = [];
-  let row: Square[] = [];
+  const components = board.split("/");
+  if (components.length !== 8) {
+    throw new Error("invalid FEN");
+  }
 
   const coord = (row: number, ci: number) => "abcdefgh"[ci] + `${8 - row}`;
 
-  const flush = () => {
-    squares.push(row);
-    row = [];
-  };
+  const squares = components
+    .map((rank) => rank.split(""))
+    .map((rankarr, rowi) =>
+      rankarr.reduce((acc, cmp, ci) => {
+        if (isPiece(cmp)) {
+          acc.push({
+            kind: "piece",
+            color: isWhitePiece(cmp) ? "w" : "b",
+            type: cmp,
+            square: coord(rowi, ci),
+          });
+          return acc;
+        }
 
-  for (let cur = 0; cur < board.length; cur++) {
-    const item = board[cur];
+        const n = parseInt(cmp);
+        if (isNaN(n)) {
+          throw new Error("invalid FEN");
+        }
 
-    if (item === "/") {
-      flush();
-      continue;
-    }
+        for (let i = 0; i < n; i++) {
+          acc.push({ kind: "empty", square: coord(rowi, ci) });
+        }
 
-    if (isWhitePiece(item)) {
-      row.push({
-        kind: "piece",
-        color: "w",
-        type: item,
-        square: coord(squares.length, row.length),
-      });
-      continue;
-    }
-
-    if (isBlackPiece(item)) {
-      row.push({
-        kind: "piece",
-        color: "b",
-        type: item,
-        square: coord(squares.length, row.length),
-      });
-      continue;
-    }
-
-    const n = parseInt(item);
-    if (isNaN(n)) {
-      throw new Error("invalid FEN");
-    }
-
-    for (let i = 0; i < n; i++) {
-      row.push({ kind: "empty", square: coord(squares.length, row.length) });
-    }
-  }
-  flush(); // Don't forget the final row.
+        return acc;
+      }, [])
+    );
 
   return {
     squares,
