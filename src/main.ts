@@ -7,11 +7,11 @@ import {
   VNode,
 } from "snabbdom";
 import "./main.css";
-import Chess, { Square, Piece, Color } from "./chess";
+import Chess, { BoardSquare, Square, Piece, Color } from "./chess";
 
 interface Data {
   chess: Chess;
-  selected?: string;
+  selected?: Square;
 }
 
 let data: Data = { chess: new Chess() };
@@ -23,17 +23,22 @@ const render = () => {
 
 const patch = init([classModule, propsModule, eventListenersModule]);
 
-const hSquare = (sq: Square, bg: Color) => {
-  const isSelected = data?.selected === sq.square
+const hSquare = (sq: BoardSquare, bg: Color, moveHighlight: boolean) => {
+  const isSelected = data?.selected === sq.square;
 
   const img = ({ type, color }: Piece) =>
     `/caliente/${type.toLowerCase()}${color}.svg`;
 
   const contents =
-    sq.kind === "piece" ? [h("img", { props: { src: img(sq.piece) } })] : undefined;
+    sq.kind === "piece"
+      ? [h("img", { props: { src: img(sq.piece) } })]
+      : undefined;
 
+  // TODO: classnames
   return h(
-    `div.square.${bg}${isSelected ? ".selected" : ""}`,
+    `div.square.${bg}${isSelected ? ".selected" : ""}${
+      moveHighlight ? ".moveable" : ""
+    }`,
     {
       on: {
         click: () => {
@@ -48,25 +53,30 @@ const hSquare = (sq: Square, bg: Color) => {
         },
       },
     },
-    contents,
+    contents
   );
 };
 
-const hBoard = (squares: Square[][]) =>
-  h(
+const hBoard = (chess: Chess) => {
+  const moves = data?.selected === undefined ? [] : chess.moves(data.selected);
+
+  return h(
     "div.board",
-    squares.map((rank, ri) =>
+    chess.squares.map((rank, ri) =>
       h(
         "div.rank",
         rank.map((sq, fi) => {
           const bg = (ri + fi) % 2 === 0 ? "w" : "b";
-          return hSquare(sq, bg);
-        }),
-      ),
-    ),
-  );
+          const moveHighlight = moves.indexOf(sq.square) !== -1;
 
-const view = (data: Data) => h("div.container", [hBoard(data.chess.squares)]);
+          return hSquare(sq, bg, moveHighlight);
+        })
+      )
+    )
+  );
+};
+
+const view = (data: Data) => h("div.container", [hBoard(data.chess)]);
 
 window.addEventListener("DOMContentLoaded", () => {
   const container = document.querySelector<HTMLDivElement>("#app")!;

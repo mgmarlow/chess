@@ -15,3 +15,5 @@
 .b.selected { background-color: #646d40; }
 .w          { background-color: #f0d9b5; }
 .w.selected { background-color: #819669; }
+
+.moveable { background-image: radial-gradient(rgba(20, 85, 30, 0.5) 19%, rgba(0, 0, 0, 0) 20%) }
