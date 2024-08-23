@@ -28,29 +28,14 @@ export const isBlackPiece = (str: string): str is BlackPieceSymbol =>
   str.match(/^[pnbrqk]$/) !== null;
 export const isPiece = (str: string): str is PieceSymbol =>
   isWhitePiece(str) || isBlackPiece(str);
+export const isEmpty = (str: string): str is EmptySymbol => str === ".";
 
-const isColor = (str: string): str is Color => str === "w" || str === "b";
+export const isColor = (str: string): str is Color =>
+  str === "w" || str === "b";
+export const color = (p: AnyPieceSymbol): Color =>
+  isWhitePiece(p) ? "w" : "b";
 
-// chess.js represents empty squares as null, but that's kind of
-// annoying since it loses information about the square rank and
-// file. Instead, use a discriminated union.
-export interface Piece {
-  type: PieceSymbol;
-  color: Color;
-}
-
-export interface PieceSquare {
-  kind: "piece";
-  piece: Piece;
-  square: Square;
-}
-
-export interface EmptySquare {
-  kind: "empty";
-  square: Square;
-}
-
-export type BoardSquare = PieceSquare | EmptySquare;
+export type BoardSquare = { type: AnyPieceSymbol; square: Square };
 
 // TODO: castling and enpassant.
 interface FenResult {
@@ -217,22 +202,7 @@ class Chess {
       for (let file = 0; file < 8; file++) {
         const idx = rank * 8 + file;
 
-        if (isPiece(this._pieces[idx])) {
-          const type = this._pieces[idx];
-          row.push({
-            kind: "piece",
-            piece: {
-              type,
-              color: isWhitePiece(type) ? "w" : "b",
-            },
-            square: SQUARES[idx],
-          });
-        } else {
-          row.push({
-            kind: "empty",
-            square: SQUARES[idx],
-          });
-        }
+        row.push({ type: this._pieces[idx], square: SQUARES[idx] });
       }
 
       result.push(row);

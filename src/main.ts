@@ -7,7 +7,7 @@ import {
   VNode,
 } from "snabbdom";
 import "./main.css";
-import Chess, { BoardSquare, Square, Piece, Color } from "./chess";
+import Chess, { isPiece, BoardSquare, Square, Color, color } from "./chess";
 
 interface Data {
   chess: Chess;
@@ -16,6 +16,27 @@ interface Data {
 
 let data: Data = { chess: new Chess() };
 let vnode: VNode;
+
+const isObject = (value: any) =>
+  value != null && (typeof value == "object" || typeof value == "function");
+
+const classnames = (...args: (string | Record<string, boolean>)[]) => {
+  let classes = "";
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] && typeof args[i] === "string") {
+      classes += args[i];
+    } else if (isObject(args[i])) {
+      Object.entries(args[i]).forEach(([key, value]) => {
+        if (value) {
+          classes += key;
+        }
+      });
+    }
+  }
+
+  return classes;
+};
 
 const render = () => {
   vnode = patch(vnode, view(data));
@@ -26,26 +47,27 @@ const patch = init([classModule, propsModule, eventListenersModule]);
 const hSquare = (sq: BoardSquare, bg: Color, moveHighlight: boolean) => {
   const isSelected = data?.selected === sq.square;
 
-  const img = ({ type, color }: Piece) =>
-    `/caliente/${type.toLowerCase()}${color}.svg`;
+  const img = ({ type }: BoardSquare) =>
+    `/caliente/${type.toLowerCase()}${color(type)}.svg`;
 
-  const contents =
-    sq.kind === "piece"
-      ? [h("img", { props: { src: img(sq.piece) } })]
-      : undefined;
+  const contents = isPiece(sq.type)
+    ? [h("img", { props: { src: img(sq) } })]
+    : undefined;
 
-  // TODO: classnames
+  const classes = classnames("div.square", `.${bg}`, {
+    ".selected": isSelected,
+    ".moveable": moveHighlight,
+  });
+
   return h(
-    `div.square.${bg}${isSelected ? ".selected" : ""}${
-      moveHighlight ? ".moveable" : ""
-    }`,
+    classes,
     {
       on: {
         click: () => {
           if (data.selected) {
             data.chess.move(data.selected, sq.square);
             data.selected = undefined;
-          } else if (sq.kind === "piece") {
+          } else if (isPiece(sq.type)) {
             data.selected = sq.square;
           }
 
@@ -53,7 +75,7 @@ const hSquare = (sq: BoardSquare, bg: Color, moveHighlight: boolean) => {
         },
       },
     },
-    contents
+    contents,
   );
 };
 
@@ -70,9 +92,9 @@ const hBoard = (chess: Chess) => {
           const moveHighlight = moves.indexOf(sq.square) !== -1;
 
           return hSquare(sq, bg, moveHighlight);
-        })
-      )
-    )
+        }),
+      ),
+    ),
   );
 };
 
