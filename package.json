@@ -19,5 +19,5 @@
   "dependencies": {
     "snabbdom": "^3.6.2"
   },
-  "packageManager": "yarn@4.4.1"
+  "packageManager": "yarn@4.3.1"
 }
