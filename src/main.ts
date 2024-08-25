@@ -7,7 +7,15 @@ import {
   VNode,
 } from "snabbdom";
 import "./main.css";
-import Chess, { isPiece, BoardSquare, Square, Color, color } from "./chess";
+import Chess, {
+  isPiece,
+  BoardSquare,
+  PieceSymbol,
+  Square,
+  Color,
+  color,
+} from "./chess";
+import { isObject } from "./common";
 
 interface Data {
   chess: Chess;
@@ -16,9 +24,6 @@ interface Data {
 
 let data: Data = { chess: new Chess() };
 let vnode: VNode;
-
-const isObject = (value: any) =>
-  value != null && (typeof value == "object" || typeof value == "function");
 
 const classnames = (...args: (string | Record<string, boolean>)[]) => {
   let classes = "";
@@ -47,11 +52,11 @@ const patch = init([classModule, propsModule, eventListenersModule]);
 const hSquare = (sq: BoardSquare, bg: Color, moveHighlight: boolean) => {
   const isSelected = data?.selected === sq.square;
 
-  const img = ({ type }: BoardSquare) =>
+  const img = (type: PieceSymbol) =>
     `/caliente/${type.toLowerCase()}${color(type)}.svg`;
 
   const contents = isPiece(sq.type)
-    ? [h("img", { props: { src: img(sq) } })]
+    ? [h("img", { props: { src: img(sq.type) } })]
     : undefined;
 
   const classes = classnames("div.square", `.${bg}`, {

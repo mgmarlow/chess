@@ -32,8 +32,10 @@ export const isEmpty = (str: string): str is EmptySymbol => str === ".";
 
 export const isColor = (str: string): str is Color =>
   str === "w" || str === "b";
-export const color = (p: AnyPieceSymbol): Color =>
-  isWhitePiece(p) ? "w" : "b";
+export const color = (p: PieceSymbol): Color => (isWhitePiece(p) ? "w" : "b");
+
+const isSameColor = (p: PieceSymbol, o: PieceSymbol): boolean =>
+  color(p) === color(o);
 
 export type BoardSquare = { type: AnyPieceSymbol; square: Square };
 
@@ -128,6 +130,7 @@ const [N, E, S, W] = [-10, 1, 10, -1];
 const directions = (p: PieceSymbol) => {
   switch (p) {
     case "p":
+      return [S, S + S, S + W, S + E];
     case "P":
       return [N, N + N, N + W, N + E];
     case "n":
@@ -158,10 +161,12 @@ const directions = (p: PieceSymbol) => {
 
 class Chess {
   private _pieces: AnyPieceSymbol[];
+  // private _active: Color = "w";
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
     const { pieces } = parseFen(fen);
     this._pieces = pieces;
+    // this._active = active;
   }
 
   moves(sq: Square): Square[] {
@@ -171,20 +176,27 @@ class Chess {
       return [];
     }
 
-    // Need to filter valid moves eventually.
-    // const color = isWhitePiece(piece) ? "w" : "b";
-
     return filterMap((dir: number) => {
       const mb = mailbox[dir + mailbox64[idx]];
+
       if (mb === -1) {
         return undefined;
-      } else {
-        return SQUARES[mb];
       }
+
+      const other = this._pieces[mb];
+      if (isPiece(other) && isSameColor(piece, other)) {
+        return undefined;
+      }
+
+      return SQUARES[mb];
     }, directions(piece));
   }
 
   move(from: Square, to: Square) {
+    if (!this.moves(from).includes(to)) {
+      return;
+    }
+
     const startidx = SQUARES.indexOf(from);
     const endidx = SQUARES.indexOf(to);
 

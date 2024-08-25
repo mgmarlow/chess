@@ -9,3 +9,6 @@ export const filterMap = <X, Y>(fn: (cur: X) => Y | undefined, lst: X[]): Y[] =>
       return acc;
     }
   }, [] as Y[]);
+
+export const isObject = (value: any) =>
+  value != null && (typeof value == "object" || typeof value == "function");

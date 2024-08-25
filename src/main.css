@@ -1,19 +1,32 @@
 @import url("https://cdn.jsdelivr.net/gh/jgthms/minireset.css@master/minireset.min.css");
 
 .rank {
-    display: flex;
-    justify-content: center;
+  display: flex;
+  justify-content: center;
 }
 
 .square {
-    width: 64px;
-    height: 64px;
-    display: inline-block;
+  width: 64px;
+  height: 64px;
+  display: inline-block;
 }
 
-.b          { background-color: #b58863; }
-.b.selected { background-color: #646d40; }
-.w          { background-color: #f0d9b5; }
-.w.selected { background-color: #819669; }
+.b {
+  background-color: #b58863;
+}
+.b.selected {
+  background-color: #646d40;
+}
+.w {
+  background-color: #f0d9b5;
+}
+.w.selected {
+  background-color: #819669;
+}
 
-.moveable { background-image: radial-gradient(rgba(20, 85, 30, 0.5) 19%, rgba(0, 0, 0, 0) 20%) }
+.moveable {
+  background-image: radial-gradient(
+    rgba(20, 85, 30, 0.5) 19%,
+    rgba(0, 0, 0, 0) 20%
+  );
+}
