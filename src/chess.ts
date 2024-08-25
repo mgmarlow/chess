@@ -140,6 +140,7 @@ const directions = (p: PieceSymbol) => {
         E + N + E,
         E + S + E,
         S + S + W,
+        S + S + E,
         W + S + W,
         W + N + W,
         N + N + W,
