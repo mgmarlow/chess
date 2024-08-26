@@ -160,6 +160,8 @@ const directions = (p: PieceSymbol) => {
   }
 };
 
+const oneOf = <T>(p: T, matches: T[]): boolean => matches.includes(p);
+
 class Chess {
   private _pieces: AnyPieceSymbol[];
   // private _active: Color = "w";
@@ -177,16 +179,40 @@ class Chess {
       return [];
     }
 
+    // TODO: Need to expand directions from the filtermap for pieces with long movement
     return filterMap((dir: number) => {
       const mb = mailbox[dir + mailbox64[idx]];
-
       if (mb === -1) {
         return undefined;
       }
 
-      const other = this._pieces[mb];
-      if (isPiece(other) && isSameColor(piece, other)) {
+      const dest = this._pieces[mb];
+      if (isPiece(dest) && isSameColor(piece, dest)) {
         return undefined;
+      }
+
+      if (oneOf(piece, ["p", "P"])) {
+        // TODO: Move to isValidPawnMove
+        if (oneOf(dir, [N, N + N]) && !isEmpty(dest)) {
+          return undefined;
+        }
+
+        if (dir === N + N && isWhitePiece(piece) && (idx > 55 || idx < 48)) {
+          return undefined;
+        }
+
+        if (dir === S + S && isBlackPiece(piece) && (idx > 15 || idx < 8)) {
+          return undefined;
+        }
+
+        if (oneOf(dir, [N + W, N + E]) && isEmpty(dest)) {
+          return undefined;
+        }
+
+        if (oneOf(dir, [S + W, S + E]) && isEmpty(dest)) {
+          return undefined;
+        }
+        // TODO: promotions
       }
 
       return SQUARES[mb];
