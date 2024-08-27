@@ -61,7 +61,8 @@ const hSquare = (sq: BoardSquare, bg: Color, moveHighlight: boolean) => {
 
   const classes = classnames("div.square", `.${bg}`, {
     ".selected": isSelected,
-    ".moveable": moveHighlight,
+    ".moveable": moveHighlight && sq.type === ".",
+    ".attackable": moveHighlight && sq.type !== ".",
   });
 
   return h(
