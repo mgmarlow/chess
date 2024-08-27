@@ -203,28 +203,27 @@ class Chess {
 
           // Remove invalid moves for pawns
           if (oneOf(piece, ["p", "P"])) {
-            // TODO: Move to isValidPawnMove
-            if (oneOf(cur, [N, N + N]) && !isEmpty(dest)) {
+            if (oneOf(dir, [N, N + N]) && !isEmpty(dest)) {
               break;
             }
 
             if (
-              cur === N + N &&
+              dir === N + N &&
               isWhitePiece(piece) &&
               (idx > 55 || idx < 48)
             ) {
               break;
             }
 
-            if (cur === S + S && isBlackPiece(piece) && (idx > 15 || idx < 8)) {
+            if (dir === S + S && isBlackPiece(piece) && (idx > 15 || idx < 8)) {
               break;
             }
 
-            if (oneOf(cur, [N + W, N + E]) && isEmpty(dest)) {
+            if (oneOf(dir, [N + W, N + E]) && isEmpty(dest)) {
               break;
             }
 
-            if (oneOf(cur, [S + W, S + E]) && isEmpty(dest)) {
+            if (oneOf(dir, [S + W, S + E]) && isEmpty(dest)) {
               break;
             }
             // TODO: promotions
