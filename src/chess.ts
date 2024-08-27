@@ -179,7 +179,38 @@ class Chess {
       return [];
     }
 
-    // TODO: Need to expand directions from the filtermap for pieces with long movement
+    // TODO: this needs a little cleanup
+    const startingIndex = mailbox64[idx];
+    let dirs = directions(piece);
+
+    if (oneOf(piece, ["q", "Q", "r", "R", "b", "B"])) {
+      dirs = dirs.flatMap((dir) => {
+        let expanded = [];
+        let cur = 0;
+
+        while (true) {
+          cur = cur + dir;
+          const mb = mailbox[cur + startingIndex];
+          if (mb === -1) {
+            break;
+          }
+
+          if (isPiece(this._pieces[mb])) {
+            if (isSameColor(piece, this._pieces[mb])) {
+              break;
+            } else {
+              expanded.push(cur);
+              break;
+            }
+          }
+
+          expanded.push(cur);
+        }
+
+        return expanded;
+      });
+    }
+
     return filterMap((dir: number) => {
       const mb = mailbox[dir + mailbox64[idx]];
       if (mb === -1) {
@@ -216,7 +247,7 @@ class Chess {
       }
 
       return SQUARES[mb];
-    }, directions(piece));
+    }, dirs);
   }
 
   move(from: Square, to: Square) {
