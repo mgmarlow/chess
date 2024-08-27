@@ -1,5 +1,3 @@
-import { filterMap } from "./common";
-
 export const INITIAL_BOARD_FEN =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -34,8 +32,13 @@ export const isColor = (str: string): str is Color =>
   str === "w" || str === "b";
 export const color = (p: PieceSymbol): Color => (isWhitePiece(p) ? "w" : "b");
 
-const isSameColor = (p: PieceSymbol, o: PieceSymbol): boolean =>
-  color(p) === color(o);
+const isSameColor = (p: AnyPieceSymbol, o: AnyPieceSymbol): boolean => {
+  if (!isPiece(p) || !isPiece(o)) {
+    return false;
+  }
+
+  return color(p) === color(o);
+};
 
 export type BoardSquare = { type: AnyPieceSymbol; square: Square };
 
@@ -109,6 +112,8 @@ const mailbox = [
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 ];
 
+// Use these indices when mapping from SQUARES to mailbox
+// since we have to account for the extra padding.
 // prettier-ignore
 const mailbox64 = [
   21, 22, 23, 24, 25, 26, 27, 28,
@@ -121,13 +126,10 @@ const mailbox64 = [
   91, 92, 93, 94, 95, 96, 97, 98
 ];
 
-// Could also just lookup in SQUARES, I suppose.
-// const [A1, H1, A8, H8] = [56, 63, 0, 7];
-
 // Index offset for moves relative to piece.
 const [N, E, S, W] = [-10, 1, 10, -1];
 
-const directions = (p: PieceSymbol) => {
+const rays = (p: PieceSymbol) => {
   switch (p) {
     case "p":
       return [S, S + S, S + W, S + E];
@@ -179,15 +181,14 @@ class Chess {
       return [];
     }
 
-    // TODO: this needs a little cleanup
+    // Map to mailbox64 to account for the extra padding in mailbox.
     const startingIndex = mailbox64[idx];
-    let dirs = directions(piece);
-
-    if (oneOf(piece, ["q", "Q", "r", "R", "b", "B"])) {
-      dirs = dirs.flatMap((dir) => {
+    return rays(piece)
+      .flatMap((dir) => {
         let expanded = [];
         let cur = 0;
 
+        // Expand rays into a list of all possible index offsets.
         while (true) {
           cur = cur + dir;
           const mb = mailbox[cur + startingIndex];
@@ -195,59 +196,59 @@ class Chess {
             break;
           }
 
-          if (isPiece(this._pieces[mb])) {
-            if (isSameColor(piece, this._pieces[mb])) {
-              break;
-            } else {
-              expanded.push(cur);
+          const dest = this._pieces[mb];
+          if (isSameColor(piece, dest)) {
+            break;
+          }
+
+          // Remove invalid moves for pawns
+          if (oneOf(piece, ["p", "P"])) {
+            // TODO: Move to isValidPawnMove
+            if (oneOf(cur, [N, N + N]) && !isEmpty(dest)) {
               break;
             }
+
+            if (
+              cur === N + N &&
+              isWhitePiece(piece) &&
+              (idx > 55 || idx < 48)
+            ) {
+              break;
+            }
+
+            if (cur === S + S && isBlackPiece(piece) && (idx > 15 || idx < 8)) {
+              break;
+            }
+
+            if (oneOf(cur, [N + W, N + E]) && isEmpty(dest)) {
+              break;
+            }
+
+            if (oneOf(cur, [S + W, S + E]) && isEmpty(dest)) {
+              break;
+            }
+            // TODO: promotions
+          }
+
+          // Stop seek for knights, kings, and pawns
+          if (oneOf(piece, ["k", "K", "n", "N", "p", "P"])) {
+            expanded.push(cur);
+            break;
+          }
+
+          if (isPiece(dest) && isSameColor(piece, dest)) {
+            break;
+          } else if (isPiece(dest)) {
+            expanded.push(cur);
+            break;
           }
 
           expanded.push(cur);
         }
 
         return expanded;
-      });
-    }
-
-    return filterMap((dir: number) => {
-      const mb = mailbox[dir + mailbox64[idx]];
-      if (mb === -1) {
-        return undefined;
-      }
-
-      const dest = this._pieces[mb];
-      if (isPiece(dest) && isSameColor(piece, dest)) {
-        return undefined;
-      }
-
-      if (oneOf(piece, ["p", "P"])) {
-        // TODO: Move to isValidPawnMove
-        if (oneOf(dir, [N, N + N]) && !isEmpty(dest)) {
-          return undefined;
-        }
-
-        if (dir === N + N && isWhitePiece(piece) && (idx > 55 || idx < 48)) {
-          return undefined;
-        }
-
-        if (dir === S + S && isBlackPiece(piece) && (idx > 15 || idx < 8)) {
-          return undefined;
-        }
-
-        if (oneOf(dir, [N + W, N + E]) && isEmpty(dest)) {
-          return undefined;
-        }
-
-        if (oneOf(dir, [S + W, S + E]) && isEmpty(dest)) {
-          return undefined;
-        }
-        // TODO: promotions
-      }
-
-      return SQUARES[mb];
-    }, dirs);
+      })
+      .map((dir) => SQUARES[mailbox[dir + mailbox64[idx]]]);
   }
 
   move(from: Square, to: Square) {
