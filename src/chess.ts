@@ -165,13 +165,15 @@ const rays = (p: PieceSymbol) => {
 const oneOf = <T>(p: T, matches: T[]): boolean => matches.includes(p);
 
 class Chess {
+  public active: Color = "w";
+  public ep: number = -1;
+
   private _pieces: AnyPieceSymbol[];
-  // private _active: Color = "w";
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
-    const { pieces } = parseFen(fen);
+    const { pieces, active } = parseFen(fen);
     this._pieces = pieces;
-    // this._active = active;
+    this.active = active;
   }
 
   moves(sq: Square): Square[] {
@@ -191,7 +193,7 @@ class Chess {
         // Expand rays into a list of all possible index offsets.
         while (true) {
           cur = cur + dir;
-          const mb = mailbox[cur + startingIndex];
+          const mb: number = mailbox[cur + startingIndex];
           if (mb === -1) {
             break;
           }
@@ -207,6 +209,10 @@ class Chess {
               break;
             }
 
+            if (oneOf(dir, [S, S + S]) && !isEmpty(dest)) {
+              break;
+            }
+
             if (
               dir === N + N &&
               isWhitePiece(piece) &&
@@ -219,11 +225,11 @@ class Chess {
               break;
             }
 
-            if (oneOf(dir, [N + W, N + E]) && isEmpty(dest)) {
+            if (oneOf(dir, [N + W, N + E]) && isEmpty(dest) && mb !== this.ep) {
               break;
             }
 
-            if (oneOf(dir, [S + W, S + E]) && isEmpty(dest)) {
+            if (oneOf(dir, [S + W, S + E]) && isEmpty(dest) && mb !== this.ep) {
               break;
             }
             // TODO: promotions
@@ -261,6 +267,21 @@ class Chess {
     const piece = this._pieces[startidx];
     this._pieces[startidx] = ".";
     this._pieces[endidx] = piece;
+
+    if (oneOf(piece, ["p", "P"])) {
+      // Index offsets are in increments of 8, not 10, since we're using
+      // SQUARES indexes and not mailbox. A little confusing.
+      if (Math.abs(endidx - startidx) === 16) {
+        this.ep = piece === "P" ? startidx - 8 : startidx + 8;
+      } else if (endidx === this.ep) {
+        const epCapture = piece === "P" ? endidx + 8 : endidx - 8;
+        this._pieces[epCapture] = ".";
+      } else {
+        this.ep = -1;
+      }
+    }
+
+    // TODO: promotion
   }
 
   get squares(): BoardSquare[][] {
