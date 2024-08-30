@@ -4,6 +4,12 @@ Experiments with Chess.
 
 Uses a [10x12 mailbox](https://www.chessprogramming.org/10x12_Board).
 
+Things I'd do differently on a second go:
+
+- Use PGN from the get-go (looking at you, `Chess#move`).
+- Exclusively use mailbox indexes, avoiding the 64-length pieces array
+  via `Chess#_pieces`.
+
 ## Kudos
 
 - Piece set: [caliente](https://github.com/avi-0/caliente).

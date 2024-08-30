@@ -42,16 +42,19 @@ const isSameColor = (p: AnyPieceSymbol, o: AnyPieceSymbol): boolean => {
 
 export type BoardSquare = { type: AnyPieceSymbol; square: Square };
 
+type CastleRights = Partial<Record<"k" | "K" | "q" | "Q", boolean>>;
+
 // TODO: castling and enpassant.
 interface FenResult {
   pieces: AnyPieceSymbol[];
   active: Color;
+  castleRights: CastleRights;
   halfmove: number;
   fullmove: number;
 }
 
 export const parseFen = (fen: string): FenResult => {
-  const [originalBoard, active, _castling, _enpassant, halfmove, fullmove] =
+  const [originalBoard, active, castling, _enpassant, halfmove, fullmove] =
     fen.split(" ");
   const board = originalBoard.replace(/\//g, "");
 
@@ -76,9 +79,18 @@ export const parseFen = (fen: string): FenResult => {
     pidx += n;
   }
 
+  const castleRights: CastleRights =
+    castling === "-"
+      ? {}
+      : castling.split("").reduce((acc: CastleRights, cur) => {
+          acc[cur as "k" | "K" | "q" | "Q"] = true;
+          return acc;
+        }, {});
+
   return {
     pieces,
     active,
+    castleRights,
     halfmove: parseInt(halfmove),
     fullmove: parseInt(fullmove),
   };
@@ -167,13 +179,15 @@ const oneOf = <T>(p: T, matches: T[]): boolean => matches.includes(p);
 class Chess {
   public active: Color = "w";
   public ep: number = -1;
+  public castleRights: CastleRights = {};
 
   private _pieces: AnyPieceSymbol[];
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
-    const { pieces, active } = parseFen(fen);
+    const { pieces, active, castleRights } = parseFen(fen);
     this._pieces = pieces;
     this.active = active;
+    this.castleRights = castleRights;
   }
 
   moves(sq: Square): Square[] {
@@ -185,7 +199,7 @@ class Chess {
 
     // Map to mailbox64 to account for the extra padding in mailbox.
     const startingIndex = mailbox64[idx];
-    return rays(piece)
+    const squares = rays(piece)
       .flatMap((dir) => {
         let expanded = [];
         let cur = 0;
@@ -232,7 +246,6 @@ class Chess {
             if (oneOf(dir, [S + W, S + E]) && isEmpty(dest) && mb !== this.ep) {
               break;
             }
-            // TODO: promotions
           }
 
           // Stop seek for knights, kings, and pawns
@@ -254,6 +267,19 @@ class Chess {
         return expanded;
       })
       .map((dir) => SQUARES[mailbox[dir + mailbox64[idx]]]);
+
+    // TODO: need to check for check
+    if (
+      idx === 60 &&
+      piece === "K" &&
+      this.castleRights["K"] &&
+      isEmpty(this._pieces[61]) &&
+      isEmpty(this._pieces[62])
+    ) {
+      squares.push("g1");
+    }
+
+    return squares;
   }
 
   move(from: Square, to: Square) {
@@ -281,7 +307,15 @@ class Chess {
       }
     }
 
-    // TODO: promotion
+    // TODO: update castleRights when moving king/rook
+
+    // white kingside
+    if (from === "e1" && to === "g1") {
+      this._pieces[SQUARES.indexOf("g1")] = "K";
+      this._pieces[SQUARES.indexOf("f1")] = "R";
+      this._pieces[SQUARES.indexOf("e1")] = ".";
+      this._pieces[SQUARES.indexOf("h1")] = ".";
+    }
   }
 
   get squares(): BoardSquare[][] {
