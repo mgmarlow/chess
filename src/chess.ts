@@ -269,6 +269,8 @@ class Chess {
       .map((dir) => SQUARES[mailbox[dir + mailbox64[idx]]]);
 
     // TODO: need to check for check
+
+    // Castling
     if (
       idx === 60 &&
       piece === "K" &&
@@ -277,6 +279,38 @@ class Chess {
       isEmpty(this._pieces[62])
     ) {
       squares.push("g1");
+    }
+
+    if (
+      idx === 60 &&
+      piece === "K" &&
+      this.castleRights["Q"] &&
+      isEmpty(this._pieces[59]) &&
+      isEmpty(this._pieces[58]) &&
+      isEmpty(this._pieces[57])
+    ) {
+      squares.push("c1");
+    }
+
+    if (
+      idx === 4 &&
+      piece === "k" &&
+      this.castleRights["k"] &&
+      isEmpty(this._pieces[5]) &&
+      isEmpty(this._pieces[6])
+    ) {
+      squares.push("g8");
+    }
+
+    if (
+      idx === 4 &&
+      piece === "k" &&
+      this.castleRights["q"] &&
+      isEmpty(this._pieces[3]) &&
+      isEmpty(this._pieces[2]) &&
+      isEmpty(this._pieces[1])
+    ) {
+      squares.push("c8");
     }
 
     return squares;
@@ -309,12 +343,54 @@ class Chess {
 
     // TODO: update castleRights when moving king/rook
 
+    // TODO: DRY up castle rules.
     // white kingside
     if (from === "e1" && to === "g1") {
       this._pieces[SQUARES.indexOf("g1")] = "K";
       this._pieces[SQUARES.indexOf("f1")] = "R";
       this._pieces[SQUARES.indexOf("e1")] = ".";
       this._pieces[SQUARES.indexOf("h1")] = ".";
+    }
+
+    // white queenside
+    if (from === "e1" && to === "c1") {
+      this._pieces[SQUARES.indexOf("c1")] = "K";
+      this._pieces[SQUARES.indexOf("d1")] = "R";
+      this._pieces[SQUARES.indexOf("a1")] = ".";
+      this._pieces[SQUARES.indexOf("e1")] = ".";
+    }
+
+    // black kingside
+    if (from === "e8" && to === "g8") {
+      this._pieces[SQUARES.indexOf("g8")] = "k";
+      this._pieces[SQUARES.indexOf("f8")] = "r";
+      this._pieces[SQUARES.indexOf("e8")] = ".";
+      this._pieces[SQUARES.indexOf("h8")] = ".";
+    }
+
+    // black queenside
+    if (from === "e8" && to === "c8") {
+      this._pieces[SQUARES.indexOf("c8")] = "k";
+      this._pieces[SQUARES.indexOf("d8")] = "r";
+      this._pieces[SQUARES.indexOf("a8")] = ".";
+      this._pieces[SQUARES.indexOf("e8")] = ".";
+    }
+
+    // Update castling rights after checking valid castles.
+    if ((piece === "R" && from === "h1") || (piece === "K" && from === "e1")) {
+      this.castleRights["K"] = false;
+    }
+
+    if ((piece === "R" && from === "a1") || (piece === "K" && from === "e1")) {
+      this.castleRights["Q"] = false;
+    }
+
+    if ((piece === "r" && from === "h8") || (piece === "k" && from === "e8")) {
+      this.castleRights["k"] = false;
+    }
+
+    if ((piece === "r" && from === "a8") || (piece === "k" && from === "e8")) {
+      this.castleRights["q"] = false;
     }
   }
 
