@@ -14,6 +14,7 @@ import Chess, {
   Square,
   Color,
   color,
+  isWhitePiece,
 } from "./chess";
 import { isObject } from "./common";
 
@@ -73,11 +74,18 @@ const hSquare = (sq: BoardSquare, bg: Color, moveHighlight: boolean) => {
           if (data.selected) {
             data.chess.move(data.selected, sq.square);
             data.selected = undefined;
-          } else if (isPiece(sq.type)) {
+          } else if (isWhitePiece(sq.type)) {
             data.selected = sq.square;
           }
 
           render();
+
+          // Might want to timeout this.
+          if (data.chess.active === "b") {
+            const cpuMove = data.chess.blackMove();
+            data.chess.move(cpuMove.from, cpuMove.to);
+            render();
+          }
         },
       },
     },

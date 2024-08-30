@@ -1,6 +1,9 @@
-export const filterMap = <X, Y>(fn: (cur: X) => Y | undefined, lst: X[]): Y[] =>
-  lst.reduce((acc, cur) => {
-    const result: Y | undefined = fn(cur);
+export const filterMap = <X, Y>(
+  fn: (cur: X, i: number) => Y | undefined,
+  lst: X[],
+): Y[] =>
+  lst.reduce((acc, cur, i) => {
+    const result: Y | undefined = fn(cur, i);
 
     if (result === undefined || result === null) {
       return acc;

@@ -1,3 +1,5 @@
+import { filterMap } from "./common";
+
 export const INITIAL_BOARD_FEN =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -176,18 +178,36 @@ const rays = (p: PieceSymbol) => {
 
 const oneOf = <T>(p: T, matches: T[]): boolean => matches.includes(p);
 
+const randomInt = (max: number): number => Math.floor(Math.random() * max);
+
 class Chess {
   public active: Color = "w";
   public ep: number = -1;
   public castleRights: CastleRights = {};
 
   private _pieces: AnyPieceSymbol[];
+  private _lastMove?: Square;
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
     const { pieces, active, castleRights } = parseFen(fen);
     this._pieces = pieces;
     this.active = active;
     this.castleRights = castleRights;
+  }
+
+  blackMove(): { from: Square; to: Square } {
+    const possibleMoves: { from: Square; to: Square }[] = filterMap(
+      (p: AnyPieceSymbol, i: number) => {
+        if (!isBlackPiece(p)) {
+          return undefined;
+        }
+
+        return this.moves(SQUARES[i]).map((to) => ({ from: SQUARES[i], to }));
+      },
+      this._pieces,
+    ).flat();
+
+    return possibleMoves[randomInt(possibleMoves.length)];
   }
 
   moves(sq: Square): Square[] {
@@ -316,6 +336,19 @@ class Chess {
     return squares;
   }
 
+  get inCheck(): boolean {
+    const king = this.active === "w" ? "K" : "k";
+
+    if (!this._lastMove) {
+      return false;
+    }
+
+    const attacked = this.moves(this._lastMove);
+    return !!attacked.find(
+      (sq: Square) => this._pieces[SQUARES.indexOf(sq)] === king,
+    );
+  }
+
   move(from: Square, to: Square) {
     if (!this.moves(from).includes(to)) {
       return;
@@ -323,10 +356,12 @@ class Chess {
 
     const startidx = SQUARES.indexOf(from);
     const endidx = SQUARES.indexOf(to);
-
     const piece = this._pieces[startidx];
+
+    this._lastMove = to;
     this._pieces[startidx] = ".";
     this._pieces[endidx] = piece;
+    this.active = this.active === "w" ? "b" : "w";
 
     if (oneOf(piece, ["p", "P"])) {
       // Index offsets are in increments of 8, not 10, since we're using
@@ -341,8 +376,6 @@ class Chess {
       }
     }
 
-    // TODO: update castleRights when moving king/rook
-
     // TODO: DRY up castle rules.
     // white kingside
     if (from === "e1" && to === "g1") {
@@ -356,8 +389,8 @@ class Chess {
     if (from === "e1" && to === "c1") {
       this._pieces[SQUARES.indexOf("c1")] = "K";
       this._pieces[SQUARES.indexOf("d1")] = "R";
-      this._pieces[SQUARES.indexOf("a1")] = ".";
       this._pieces[SQUARES.indexOf("e1")] = ".";
+      this._pieces[SQUARES.indexOf("a1")] = ".";
     }
 
     // black kingside
@@ -372,8 +405,8 @@ class Chess {
     if (from === "e8" && to === "c8") {
       this._pieces[SQUARES.indexOf("c8")] = "k";
       this._pieces[SQUARES.indexOf("d8")] = "r";
-      this._pieces[SQUARES.indexOf("a8")] = ".";
       this._pieces[SQUARES.indexOf("e8")] = ".";
+      this._pieces[SQUARES.indexOf("a8")] = ".";
     }
 
     // Update castling rights after checking valid castles.

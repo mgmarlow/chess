@@ -9,6 +9,8 @@ Things I'd do differently on a second go:
 - Use PGN from the get-go (looking at you, `Chess#move`).
 - Exclusively use mailbox indexes, avoiding the 64-length pieces array
   via `Chess#_pieces`.
+- Only worry about black pieces in the engine since white is implied
+  by the player.
 
 ## Kudos
 
