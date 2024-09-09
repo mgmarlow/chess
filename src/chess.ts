@@ -1,5 +1,3 @@
-import { filterMap } from "./common";
-
 export const INITIAL_BOARD_FEN =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -145,10 +143,6 @@ const [N, E, S, W] = [-10, 1, 10, -1];
 
 const rays = (p: PieceSymbol) => {
   switch (p) {
-    case "p":
-      return [S, S + S, S + W, S + E];
-    case "P":
-      return [N, N + N, N + W, N + E];
     case "n":
     case "N":
       return [
@@ -173,15 +167,34 @@ const rays = (p: PieceSymbol) => {
     case "k":
     case "K":
       return [N, E, S, W, N + E, S + E, S + W, N + W];
+    default:
+      throw new Error("pawns don't use rays");
   }
 };
+
+// From https://www.chessprogramming.org/TSCP, castleMask plus the bitfields
+// that manage castle permissions allows us to easily determine whether or
+// not castling is allowed via an bitwise AND.
+// prettier-ignore
+const castleMask = [
+	 7, 15, 15, 15,  3, 15, 15, 11,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	13, 15, 15, 15, 12, 15, 15, 14
+];
 
 export type Moves = Partial<Record<Square, Square[]>>;
 
 class Chess {
   public active: Color = "w";
   public ep: number = -1;
-  public castleRights: CastleRights = {};
+  // 1 = white kingside, 2 = white queenside, 4 = black kingside,
+  // 8 = black queenside. A bitfield used with castleMask.
+  public castle: number = 15;
 
   private _pieces: AnyPieceSymbol[];
   private _lastMove?: Square;
@@ -190,13 +203,16 @@ class Chess {
     const { pieces, active, castleRights } = parseFen(fen);
     this._pieces = pieces;
     this.active = active;
-    this.castleRights = castleRights;
+    // this.castleRights = castleRights;
   }
 
   move({ from, to }: { from: Square; to: Square }) {
-    const tmp = this._pieces[SQUARES.indexOf(from)];
-    this._pieces[SQUARES.indexOf(from)] = ".";
-    this._pieces[SQUARES.indexOf(to)] = tmp;
+    const fromi = SQUARES.indexOf(from);
+    const toi = SQUARES.indexOf(to);
+    const tmp = this._pieces[fromi];
+    this._pieces[fromi] = ".";
+    this._pieces[toi] = tmp;
+    this.castle = this.castle & (castleMask[fromi] & castleMask[toi]);
   }
 
   moves(): Moves {
@@ -210,6 +226,7 @@ class Chess {
 
       const currentMoves: Square[] = [];
       if (color(piece) === this.active) {
+        // For pawns, don't bother with rays. It just adds extra complexity.
         if (piece === "P") {
           if (this._pieces[i - 7] && isBlackPiece(this._pieces[i - 7])) {
             currentMoves.push(SQUARES[i - 7]);
@@ -272,6 +289,26 @@ class Chess {
       }
 
       moves[SQUARES[i]] = currentMoves;
+    }
+
+    if (this.active === "w") {
+      moves["e1"] = moves["e1"] || [];
+      if (this.castle & 1) {
+        moves["e1"].push("g1");
+      }
+
+      if (this.castle & 2) {
+        moves["e1"].push("c1");
+      }
+    } else {
+      moves["e8"] = moves["e8"] || [];
+      if (this.castle & 4) {
+        moves["e8"].push("g8");
+      }
+
+      if (this.castle & 8) {
+        moves["e8"].push("c8");
+      }
     }
 
     return moves;
