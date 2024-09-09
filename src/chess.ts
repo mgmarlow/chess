@@ -176,8 +176,6 @@ const rays = (p: PieceSymbol) => {
   }
 };
 
-const oneOf = <T,>(p: T, matches: T[]): boolean => matches.includes(p);
-
 export type Moves = Partial<Record<Square, Square[]>>;
 
 class Chess {
@@ -195,6 +193,12 @@ class Chess {
     this.castleRights = castleRights;
   }
 
+  move({ from, to }: { from: Square; to: Square }) {
+    const tmp = this._pieces[SQUARES.indexOf(from)];
+    this._pieces[SQUARES.indexOf(from)] = ".";
+    this._pieces[SQUARES.indexOf(to)] = tmp;
+  }
+
   moves(): Moves {
     const moves: Moves = {};
 
@@ -207,6 +211,14 @@ class Chess {
       const currentMoves: Square[] = [];
       if (color(piece) === this.active) {
         if (piece === "P") {
+          if (this._pieces[i - 7] && isBlackPiece(this._pieces[i - 7])) {
+            currentMoves.push(SQUARES[i - 7]);
+          }
+
+          if (this._pieces[i - 9] && isBlackPiece(this._pieces[i - 9])) {
+            currentMoves.push(SQUARES[i - 9]);
+          }
+
           if (isEmpty(this._pieces[i - 8])) {
             currentMoves.push(SQUARES[i - 8]);
           }
@@ -215,6 +227,14 @@ class Chess {
             currentMoves.push(SQUARES[i - 16]);
           }
         } else if (piece === "p") {
+          if (this._pieces[i + 7] && isWhitePiece(this._pieces[i + 7])) {
+            currentMoves.push(SQUARES[i + 7]);
+          }
+
+          if (this._pieces[i + 9] && isWhitePiece(this._pieces[i + 9])) {
+            currentMoves.push(SQUARES[i + 9]);
+          }
+
           if (isEmpty(this._pieces[i + 8])) {
             currentMoves.push(SQUARES[i + 8]);
           }
@@ -223,8 +243,8 @@ class Chess {
             currentMoves.push(SQUARES[i + 16]);
           }
         } else {
-          let cur = mailbox64[i];
           rays(piece).forEach((dir) => {
+            let cur = mailbox64[i];
             while (true) {
               const n = mailbox[cur + dir];
               if (n === -1) {

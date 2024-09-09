@@ -18,8 +18,14 @@ export default class Ctrl {
   }
 
   handleClick(sq: BoardSquare) {
-    if (this.selected) {
+    if (this.selected && this.selectedMoves.includes(sq.square)) {
+      const move = {
+        from: this.selected,
+        to: sq.square,
+      }
+      this.chess.move(move);
       this.selected = undefined;
+      this.moves = this.chess.moves();
     } else if (isWhitePiece(sq.type)) {
       this.selected = sq.square;
       this.moves = this.chess.moves();
