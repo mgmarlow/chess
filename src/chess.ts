@@ -110,6 +110,20 @@ export const SQUARES: Square[] = [
   'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1'
 ]
 
+// Use these indices when mapping from SQUARES to mailbox
+// since we have to account for the extra padding.
+// prettier-ignore
+const mailbox64 = [
+  21, 22, 23, 24, 25, 26, 27, 28,
+  31, 32, 33, 34, 35, 36, 37, 38,
+  41, 42, 43, 44, 45, 46, 47, 48,
+  51, 52, 53, 54, 55, 56, 57, 58,
+  61, 62, 63, 64, 65, 66, 67, 68,
+  71, 72, 73, 74, 75, 76, 77, 78,
+  81, 82, 83, 84, 85, 86, 87, 88,
+  91, 92, 93, 94, 95, 96, 97, 98
+];
+
 // prettier-ignore
 const mailbox = [
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -124,20 +138,6 @@ const mailbox = [
   -1, 56, 57, 58, 59, 60, 61, 62, 63, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-];
-
-// Use these indices when mapping from SQUARES to mailbox
-// since we have to account for the extra padding.
-// prettier-ignore
-const mailbox64 = [
-  21, 22, 23, 24, 25, 26, 27, 28,
-  31, 32, 33, 34, 35, 36, 37, 38,
-  41, 42, 43, 44, 45, 46, 47, 48,
-  51, 52, 53, 54, 55, 56, 57, 58,
-  61, 62, 63, 64, 65, 66, 67, 68,
-  71, 72, 73, 74, 75, 76, 77, 78,
-  81, 82, 83, 84, 85, 86, 87, 88,
-  91, 92, 93, 94, 95, 96, 97, 98
 ];
 
 // Index offset for moves relative to piece.
@@ -176,9 +176,9 @@ const rays = (p: PieceSymbol) => {
   }
 };
 
-const oneOf = <T>(p: T, matches: T[]): boolean => matches.includes(p);
+const oneOf = <T,>(p: T, matches: T[]): boolean => matches.includes(p);
 
-const randomInt = (max: number): number => Math.floor(Math.random() * max);
+export type Moves = Partial<Record<Square, Square[]>>;
 
 class Chess {
   public active: Color = "w";
@@ -195,236 +195,66 @@ class Chess {
     this.castleRights = castleRights;
   }
 
-  blackMove(): { from: Square; to: Square } {
-    const possibleMoves: { from: Square; to: Square }[] = filterMap(
-      (p: AnyPieceSymbol, i: number) => {
-        if (!isBlackPiece(p)) {
-          return undefined;
-        }
+  moves(): Moves {
+    const moves: Moves = {};
 
-        return this.moves(SQUARES[i]).map((to) => ({ from: SQUARES[i], to }));
-      },
-      this._pieces,
-    ).flat();
-
-    return possibleMoves[randomInt(possibleMoves.length)];
-  }
-
-  moves(sq: Square): Square[] {
-    const idx = SQUARES.indexOf(sq);
-    const piece = this._pieces[idx];
-    if (!isPiece(piece)) {
-      return [];
-    }
-
-    // Map to mailbox64 to account for the extra padding in mailbox.
-    const startingIndex = mailbox64[idx];
-    const squares = rays(piece)
-      .flatMap((dir) => {
-        let expanded = [];
-        let cur = 0;
-
-        // Expand rays into a list of all possible index offsets.
-        while (true) {
-          cur = cur + dir;
-          const mb: number = mailbox[cur + startingIndex];
-          if (mb === -1) {
-            break;
-          }
-
-          const dest = this._pieces[mb];
-          if (isSameColor(piece, dest)) {
-            break;
-          }
-
-          // Remove invalid moves for pawns
-          if (oneOf(piece, ["p", "P"])) {
-            if (oneOf(dir, [N, N + N]) && !isEmpty(dest)) {
-              break;
-            }
-
-            if (oneOf(dir, [S, S + S]) && !isEmpty(dest)) {
-              break;
-            }
-
-            if (
-              dir === N + N &&
-              isWhitePiece(piece) &&
-              (idx > 55 || idx < 48)
-            ) {
-              break;
-            }
-
-            if (dir === S + S && isBlackPiece(piece) && (idx > 15 || idx < 8)) {
-              break;
-            }
-
-            if (oneOf(dir, [N + W, N + E]) && isEmpty(dest) && mb !== this.ep) {
-              break;
-            }
-
-            if (oneOf(dir, [S + W, S + E]) && isEmpty(dest) && mb !== this.ep) {
-              break;
-            }
-          }
-
-          // Stop seek for knights, kings, and pawns
-          if (oneOf(piece, ["k", "K", "n", "N", "p", "P"])) {
-            expanded.push(cur);
-            break;
-          }
-
-          if (isPiece(dest) && isSameColor(piece, dest)) {
-            break;
-          } else if (isPiece(dest)) {
-            expanded.push(cur);
-            break;
-          }
-
-          expanded.push(cur);
-        }
-
-        return expanded;
-      })
-      .map((dir) => SQUARES[mailbox[dir + mailbox64[idx]]]);
-
-    // TODO: need to check for check
-
-    // Castling
-    if (
-      idx === 60 &&
-      piece === "K" &&
-      this.castleRights["K"] &&
-      isEmpty(this._pieces[61]) &&
-      isEmpty(this._pieces[62])
-    ) {
-      squares.push("g1");
-    }
-
-    if (
-      idx === 60 &&
-      piece === "K" &&
-      this.castleRights["Q"] &&
-      isEmpty(this._pieces[59]) &&
-      isEmpty(this._pieces[58]) &&
-      isEmpty(this._pieces[57])
-    ) {
-      squares.push("c1");
-    }
-
-    if (
-      idx === 4 &&
-      piece === "k" &&
-      this.castleRights["k"] &&
-      isEmpty(this._pieces[5]) &&
-      isEmpty(this._pieces[6])
-    ) {
-      squares.push("g8");
-    }
-
-    if (
-      idx === 4 &&
-      piece === "k" &&
-      this.castleRights["q"] &&
-      isEmpty(this._pieces[3]) &&
-      isEmpty(this._pieces[2]) &&
-      isEmpty(this._pieces[1])
-    ) {
-      squares.push("c8");
-    }
-
-    return squares;
-  }
-
-  get inCheck(): boolean {
-    const king = this.active === "w" ? "K" : "k";
-
-    if (!this._lastMove) {
-      return false;
-    }
-
-    const attacked = this.moves(this._lastMove);
-    return !!attacked.find(
-      (sq: Square) => this._pieces[SQUARES.indexOf(sq)] === king,
-    );
-  }
-
-  move(from: Square, to: Square) {
-    if (!this.moves(from).includes(to)) {
-      return;
-    }
-
-    const startidx = SQUARES.indexOf(from);
-    const endidx = SQUARES.indexOf(to);
-    const piece = this._pieces[startidx];
-
-    this._lastMove = to;
-    this._pieces[startidx] = ".";
-    this._pieces[endidx] = piece;
-    this.active = this.active === "w" ? "b" : "w";
-
-    if (oneOf(piece, ["p", "P"])) {
-      // Index offsets are in increments of 8, not 10, since we're using
-      // SQUARES indexes and not mailbox. A little confusing.
-      if (Math.abs(endidx - startidx) === 16) {
-        this.ep = piece === "P" ? startidx - 8 : startidx + 8;
-      } else if (endidx === this.ep) {
-        const epCapture = piece === "P" ? endidx + 8 : endidx - 8;
-        this._pieces[epCapture] = ".";
-      } else {
-        this.ep = -1;
+    for (let i = 0; i < 64; i++) {
+      const piece: AnyPieceSymbol = this._pieces[i];
+      if (isEmpty(piece)) {
+        continue;
       }
+
+      const currentMoves: Square[] = [];
+      if (color(piece) === this.active) {
+        if (piece === "P") {
+          if (isEmpty(this._pieces[i - 8])) {
+            currentMoves.push(SQUARES[i - 8]);
+          }
+
+          if (i >= 48 && isEmpty(this._pieces[i - 16])) {
+            currentMoves.push(SQUARES[i - 16]);
+          }
+        } else if (piece === "p") {
+          if (isEmpty(this._pieces[i + 8])) {
+            currentMoves.push(SQUARES[i + 8]);
+          }
+
+          if (i >= 48 && isEmpty(this._pieces[i + 16])) {
+            currentMoves.push(SQUARES[i + 16]);
+          }
+        } else {
+          let cur = mailbox64[i];
+          rays(piece).forEach((dir) => {
+            while (true) {
+              const n = mailbox[cur + dir];
+              if (n === -1) {
+                break;
+              }
+
+              const dest = this._pieces[n];
+              if (!isEmpty(dest)) {
+                if (color(dest) !== color(piece)) {
+                  currentMoves.push(SQUARES[n]);
+                }
+                break;
+              }
+
+              currentMoves.push(SQUARES[n]);
+
+              // Stop seek for knights and kings.
+              if (["n", "N", "k", "K"].includes(piece)) {
+                break;
+              }
+              cur += dir;
+            }
+          });
+        }
+      }
+
+      moves[SQUARES[i]] = currentMoves;
     }
 
-    // TODO: DRY up castle rules.
-    // white kingside
-    if (from === "e1" && to === "g1") {
-      this._pieces[SQUARES.indexOf("g1")] = "K";
-      this._pieces[SQUARES.indexOf("f1")] = "R";
-      this._pieces[SQUARES.indexOf("e1")] = ".";
-      this._pieces[SQUARES.indexOf("h1")] = ".";
-    }
-
-    // white queenside
-    if (from === "e1" && to === "c1") {
-      this._pieces[SQUARES.indexOf("c1")] = "K";
-      this._pieces[SQUARES.indexOf("d1")] = "R";
-      this._pieces[SQUARES.indexOf("e1")] = ".";
-      this._pieces[SQUARES.indexOf("a1")] = ".";
-    }
-
-    // black kingside
-    if (from === "e8" && to === "g8") {
-      this._pieces[SQUARES.indexOf("g8")] = "k";
-      this._pieces[SQUARES.indexOf("f8")] = "r";
-      this._pieces[SQUARES.indexOf("e8")] = ".";
-      this._pieces[SQUARES.indexOf("h8")] = ".";
-    }
-
-    // black queenside
-    if (from === "e8" && to === "c8") {
-      this._pieces[SQUARES.indexOf("c8")] = "k";
-      this._pieces[SQUARES.indexOf("d8")] = "r";
-      this._pieces[SQUARES.indexOf("e8")] = ".";
-      this._pieces[SQUARES.indexOf("a8")] = ".";
-    }
-
-    // Update castling rights after checking valid castles.
-    if ((piece === "R" && from === "h1") || (piece === "K" && from === "e1")) {
-      this.castleRights["K"] = false;
-    }
-
-    if ((piece === "R" && from === "a1") || (piece === "K" && from === "e1")) {
-      this.castleRights["Q"] = false;
-    }
-
-    if ((piece === "r" && from === "h8") || (piece === "k" && from === "e8")) {
-      this.castleRights["k"] = false;
-    }
-
-    if ((piece === "r" && from === "a8") || (piece === "k" && from === "e8")) {
-      this.castleRights["q"] = false;
-    }
+    return moves;
   }
 
   get squares(): BoardSquare[][] {
