@@ -192,18 +192,31 @@ export type Moves = Partial<Record<Square, Square[]>>;
 class Chess {
   public active: Color = "w";
   public ep: number = -1;
-  // 1 = white kingside, 2 = white queenside, 4 = black kingside,
-  // 8 = black queenside. A bitfield used with castleMask.
-  public castle: number = 15;
 
   private _pieces: AnyPieceSymbol[];
+  // 1 = white kingside, 2 = white queenside, 4 = black kingside,
+  // 8 = black queenside. A bitfield used with castleMask.
+  private _castle: number = 15;
   private _lastMove?: Square;
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
     const { pieces, active, castleRights } = parseFen(fen);
     this._pieces = pieces;
     this.active = active;
-    // this.castleRights = castleRights;
+
+    this._castle = 0;
+    if (castleRights.K) {
+      this._castle += 1;
+    }
+    if (castleRights.Q) {
+      this._castle += 2;
+    }
+    if (castleRights.k) {
+      this._castle += 4;
+    }
+    if (castleRights.q) {
+      this._castle += 8;
+    }
   }
 
   move({ from, to }: { from: Square; to: Square }) {
@@ -212,7 +225,7 @@ class Chess {
     const tmp = this._pieces[fromi];
     this._pieces[fromi] = ".";
     this._pieces[toi] = tmp;
-    this.castle = this.castle & (castleMask[fromi] & castleMask[toi]);
+    this._castle = this._castle & (castleMask[fromi] & castleMask[toi]);
   }
 
   moves(): Moves {
@@ -293,20 +306,20 @@ class Chess {
 
     if (this.active === "w") {
       moves["e1"] = moves["e1"] || [];
-      if (this.castle & 1) {
+      if (this._castle & 1) {
         moves["e1"].push("g1");
       }
 
-      if (this.castle & 2) {
+      if (this._castle & 2) {
         moves["e1"].push("c1");
       }
     } else {
       moves["e8"] = moves["e8"] || [];
-      if (this.castle & 4) {
+      if (this._castle & 4) {
         moves["e8"].push("g8");
       }
 
-      if (this.castle & 8) {
+      if (this._castle & 8) {
         moves["e8"].push("c8");
       }
     }
