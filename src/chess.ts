@@ -221,6 +221,16 @@ class Chess {
     return true;
   }
 
+  isEmpty(idx: number): boolean;
+  isEmpty(sq: Square): boolean;
+  isEmpty(arg: Square | number) {
+    if (typeof arg === "number") {
+      return isEmpty(this._pieces[arg]);
+    }
+
+    return isEmpty(this._pieces[SQUARES.indexOf(arg)]);
+  }
+
   moves(): Moves {
     const moves: Moves = {};
 
@@ -242,11 +252,11 @@ class Chess {
             currentMoves.push(buildMove(i, i - 9));
           }
 
-          if (isEmpty(this._pieces[i - 8])) {
+          if (this.isEmpty(i - 8)) {
             currentMoves.push(buildMove(i, i - 8));
           }
 
-          if (i >= 48 && isEmpty(this._pieces[i - 16])) {
+          if (i >= 48 && this.isEmpty(i - 16)) {
             currentMoves.push(buildMove(i, i - 16));
           }
         } else if (piece === "p") {
@@ -258,11 +268,11 @@ class Chess {
             currentMoves.push(buildMove(i, i + 9));
           }
 
-          if (isEmpty(this._pieces[i + 8])) {
+          if (this.isEmpty(i + 8)) {
             currentMoves.push(buildMove(i, i + 8));
           }
 
-          if (i >= 48 && isEmpty(this._pieces[i + 16])) {
+          if (i >= 48 && this.isEmpty(i + 16)) {
             currentMoves.push(buildMove(i, i + 16));
           }
         } else {
@@ -297,24 +307,35 @@ class Chess {
       moves[SQUARES[i]] = currentMoves;
     }
 
+    // Castling.
     if (this.active === "w") {
       moves["e1"] = moves["e1"] || [];
-      if (this._castleRights.K) {
+      if (this._castleRights.K && this.isEmpty("f1") && this.isEmpty("g1")) {
         moves["e1"].push({ from: "e1", to: "g1", flags: "c" });
       }
 
-      if (this._castleRights.Q) {
+      if (
+        this._castleRights.Q &&
+        this.isEmpty("d1") &&
+        this.isEmpty("c1") &&
+        this.isEmpty("b1")
+      ) {
         moves["e1"].push({ from: "e1", to: "c1", flags: "c" });
       }
     } else {
       moves["e8"] = moves["e8"] || [];
-      // if (this._castle & 4) {
-      //   moves["e8"].push("g8");
-      // }
+      if (this._castleRights.k && this.isEmpty("f8") && this.isEmpty("g8")) {
+        moves["e8"].push({ from: "e8", to: "g8", flags: "c" });
+      }
 
-      // if (this._castle & 8) {
-      //   moves["e8"].push("c8");
-      // }
+      if (
+        this._castleRights.q &&
+        this.isEmpty("d8") &&
+        this.isEmpty("c8") &&
+        this.isEmpty("b8")
+      ) {
+        moves["e8"].push({ from: "e8", to: "c8", flags: "c" });
+      }
     }
 
     return moves;

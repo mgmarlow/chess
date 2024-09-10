@@ -24,13 +24,12 @@ export default class Ctrl {
   handleClick(sq: BoardSquare) {
     if (this.selected) {
       const move = this.selectedMoves.find((move) => move.to === sq.square);
-      if (!move) {
-        return;
+      if (move) {
+        this.chess.move(move);
+        this.moves = this.chess.moves();
       }
 
-      this.chess.move(move);
       this.selected = undefined;
-      this.moves = this.chess.moves();
     } else if (isWhitePiece(sq.type)) {
       this.selected = sq.square;
       this.moves = this.chess.moves();
