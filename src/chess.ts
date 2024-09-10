@@ -178,10 +178,10 @@ export type Moves = Partial<Record<Square, Move[]>>;
 
 class Chess {
   public active: Color = "w";
-  public ep: number = -1;
 
   private _pieces: AnyPieceSymbol[];
   private _castleRights: CastleRights;
+  // private _ep: number = -1;
   // private _lastMove?: Square;
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
@@ -191,6 +191,10 @@ class Chess {
     this._castleRights = castleRights;
   }
 
+  // Remaining work:
+  // TODO: castle moves.
+  // TODO: en passant.
+  // TODO: check detection.
   move({ fromidx, from, toidx, piece }: Move): boolean {
     this._pieces[fromidx] = ".";
     this._pieces[toidx] = piece;
