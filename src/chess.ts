@@ -32,19 +32,10 @@ export const isColor = (str: string): str is Color =>
   str === "w" || str === "b";
 export const color = (p: PieceSymbol): Color => (isWhitePiece(p) ? "w" : "b");
 
-const isSameColor = (p: AnyPieceSymbol, o: AnyPieceSymbol): boolean => {
-  if (!isPiece(p) || !isPiece(o)) {
-    return false;
-  }
-
-  return color(p) === color(o);
-};
-
 export type BoardSquare = { type: AnyPieceSymbol; square: Square };
 
 type CastleRights = Partial<Record<"k" | "K" | "q" | "Q", boolean>>;
 
-// TODO: castling and enpassant.
 interface FenResult {
   pieces: AnyPieceSymbol[];
   active: Color;
@@ -172,60 +163,62 @@ const rays = (p: PieceSymbol) => {
   }
 };
 
-// From https://www.chessprogramming.org/TSCP, castleMask plus the bitfields
-// that manage castle permissions allows us to easily determine whether or
-// not castling is allowed via an bitwise AND.
-// prettier-ignore
-const castleMask = [
-	 7, 15, 15, 15,  3, 15, 15, 11,
-	15, 15, 15, 15, 15, 15, 15, 15,
-	15, 15, 15, 15, 15, 15, 15, 15,
-	15, 15, 15, 15, 15, 15, 15, 15,
-	15, 15, 15, 15, 15, 15, 15, 15,
-	15, 15, 15, 15, 15, 15, 15, 15,
-	15, 15, 15, 15, 15, 15, 15, 15,
-	13, 15, 15, 15, 12, 15, 15, 14
-];
+type Flags = "x" | "m" | "p" | "c";
 
-export type Moves = Partial<Record<Square, Square[]>>;
+export interface Move {
+  from: Square;
+  to: Square;
+  flags: Flags;
+}
+
+const buildMove = (from: number, to: number, flags: Flags = "m"): Move => {
+  return { from: SQUARES[from], to: SQUARES[to], flags };
+};
+
+// TODO: Might need more info in the actual move type to address promotions.
+// Something like from/to/piece/kind.
+export type Moves = Partial<Record<Square, Move[]>>;
 
 class Chess {
   public active: Color = "w";
   public ep: number = -1;
 
   private _pieces: AnyPieceSymbol[];
-  // 1 = white kingside, 2 = white queenside, 4 = black kingside,
-  // 8 = black queenside. A bitfield used with castleMask.
-  private _castle: number = 15;
+  private _castleRights: CastleRights;
   private _lastMove?: Square;
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
     const { pieces, active, castleRights } = parseFen(fen);
     this._pieces = pieces;
     this.active = active;
-
-    this._castle = 0;
-    if (castleRights.K) {
-      this._castle += 1;
-    }
-    if (castleRights.Q) {
-      this._castle += 2;
-    }
-    if (castleRights.k) {
-      this._castle += 4;
-    }
-    if (castleRights.q) {
-      this._castle += 8;
-    }
+    this._castleRights = castleRights;
   }
 
-  move({ from, to }: { from: Square; to: Square }) {
+  move({ from, to }: Move): boolean {
     const fromi = SQUARES.indexOf(from);
     const toi = SQUARES.indexOf(to);
     const tmp = this._pieces[fromi];
     this._pieces[fromi] = ".";
     this._pieces[toi] = tmp;
-    this._castle = this._castle & (castleMask[fromi] & castleMask[toi]);
+
+    // Update castle rights on rook/king movement.
+    if (from === "e1" || from === "h1") {
+      this._castleRights.K = false;
+    }
+
+    if (from === "e1" || from === "a1") {
+      this._castleRights.Q = false;
+    }
+
+    if (from === "e8" || from === "h8") {
+      this._castleRights.k = false;
+    }
+
+    if (from === "e8" || from === "a8") {
+      this._castleRights.q = false;
+    }
+
+    return true;
   }
 
   moves(): Moves {
@@ -237,40 +230,40 @@ class Chess {
         continue;
       }
 
-      const currentMoves: Square[] = [];
+      const currentMoves: Move[] = [];
       if (color(piece) === this.active) {
         // For pawns, don't bother with rays. It just adds extra complexity.
         if (piece === "P") {
           if (this._pieces[i - 7] && isBlackPiece(this._pieces[i - 7])) {
-            currentMoves.push(SQUARES[i - 7]);
+            currentMoves.push(buildMove(i, i - 7));
           }
 
           if (this._pieces[i - 9] && isBlackPiece(this._pieces[i - 9])) {
-            currentMoves.push(SQUARES[i - 9]);
+            currentMoves.push(buildMove(i, i - 9));
           }
 
           if (isEmpty(this._pieces[i - 8])) {
-            currentMoves.push(SQUARES[i - 8]);
+            currentMoves.push(buildMove(i, i - 8));
           }
 
           if (i >= 48 && isEmpty(this._pieces[i - 16])) {
-            currentMoves.push(SQUARES[i - 16]);
+            currentMoves.push(buildMove(i, i - 16));
           }
         } else if (piece === "p") {
           if (this._pieces[i + 7] && isWhitePiece(this._pieces[i + 7])) {
-            currentMoves.push(SQUARES[i + 7]);
+            currentMoves.push(buildMove(i, i + 7));
           }
 
           if (this._pieces[i + 9] && isWhitePiece(this._pieces[i + 9])) {
-            currentMoves.push(SQUARES[i + 9]);
+            currentMoves.push(buildMove(i, i + 9));
           }
 
           if (isEmpty(this._pieces[i + 8])) {
-            currentMoves.push(SQUARES[i + 8]);
+            currentMoves.push(buildMove(i, i + 8));
           }
 
           if (i >= 48 && isEmpty(this._pieces[i + 16])) {
-            currentMoves.push(SQUARES[i + 16]);
+            currentMoves.push(buildMove(i, i + 16));
           }
         } else {
           rays(piece).forEach((dir) => {
@@ -284,12 +277,12 @@ class Chess {
               const dest = this._pieces[n];
               if (!isEmpty(dest)) {
                 if (color(dest) !== color(piece)) {
-                  currentMoves.push(SQUARES[n]);
+                  currentMoves.push(buildMove(i, n));
                 }
                 break;
               }
 
-              currentMoves.push(SQUARES[n]);
+              currentMoves.push(buildMove(i, n));
 
               // Stop seek for knights and kings.
               if (["n", "N", "k", "K"].includes(piece)) {
@@ -306,22 +299,22 @@ class Chess {
 
     if (this.active === "w") {
       moves["e1"] = moves["e1"] || [];
-      if (this._castle & 1) {
-        moves["e1"].push("g1");
+      if (this._castleRights.K) {
+        moves["e1"].push({ from: "e1", to: "g1", flags: "c" });
       }
 
-      if (this._castle & 2) {
-        moves["e1"].push("c1");
+      if (this._castleRights.Q) {
+        moves["e1"].push({ from: "e1", to: "c1", flags: "c" });
       }
     } else {
       moves["e8"] = moves["e8"] || [];
-      if (this._castle & 4) {
-        moves["e8"].push("g8");
-      }
+      // if (this._castle & 4) {
+      //   moves["e8"].push("g8");
+      // }
 
-      if (this._castle & 8) {
-        moves["e8"].push("c8");
-      }
+      // if (this._castle & 8) {
+      //   moves["e8"].push("c8");
+      // }
     }
 
     return moves;

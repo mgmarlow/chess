@@ -1,4 +1,4 @@
-import Chess, { BoardSquare, Moves, isWhitePiece, Square } from "./chess";
+import Chess, { BoardSquare, Move, Moves, isWhitePiece, Square } from "./chess";
 
 export default class Ctrl {
   public selected?: Square;
@@ -9,7 +9,11 @@ export default class Ctrl {
     this.chess = new Chess();
   }
 
-  get selectedMoves(): Square[] {
+  get selectedMoveSquares(): Square[] {
+    return this.selectedMoves.map((move) => move.to);
+  }
+
+  get selectedMoves(): Move[] {
     if (!this.selected) {
       return [];
     }
@@ -18,11 +22,12 @@ export default class Ctrl {
   }
 
   handleClick(sq: BoardSquare) {
-    if (this.selected && this.selectedMoves.includes(sq.square)) {
-      const move = {
-        from: this.selected,
-        to: sq.square,
+    if (this.selected) {
+      const move = this.selectedMoves.find((move) => move.to === sq.square);
+      if (!move) {
+        return;
       }
+
       this.chess.move(move);
       this.selected = undefined;
       this.moves = this.chess.moves();

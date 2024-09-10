@@ -61,7 +61,8 @@ const hBoard = (ctrl: Ctrl) => {
         "div.rank",
         rank.map((sq, fi) => {
           const bg = (ri + fi) % 2 === 0 ? "w" : "b";
-          const moveHighlight = ctrl.selectedMoves.indexOf(sq.square) !== -1;
+          const moveHighlight =
+            ctrl.selectedMoveSquares.indexOf(sq.square) !== -1;
 
           return hSquare(ctrl, sq, bg, moveHighlight);
         }),
