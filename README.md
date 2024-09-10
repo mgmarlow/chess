@@ -1,22 +1,8 @@
 # Chess
 
-Chess engine from scratch with a single UI library. Uses a [10x12
-mailbox](https://www.chessprogramming.org/10x12_Board) for internal
-board representation.
-
-Things I'd do differently on a second go:
-
-- Use PGN from the get-go (looking at you, `Chess#move`).
-- Exclusively use mailbox indexes, avoiding the 64-length pieces array
-  via `Chess#_pieces` and `SQUARES`.
-- Only worry about black pieces in the engine since white is implied
-  by the player (simplifies some edge-case annoyance).
-
-Todos:
-
-- [ ] Check detection, can't move into check
-- [ ] Promotions
-- [ ] Win/loss state
+Chess engine from scratch with no dependencies (`chess.ts`). The UI is
+powered by a single dependency:
+[snabbdom](https://github.com/snabbdom/snabbdom).
 
 ## Kudos
 

@@ -166,14 +166,13 @@ const rays = (p: PieceSymbol) => {
 type Flags = "x" | "m" | "p" | "c";
 
 export interface Move {
+  fromidx: number;
   from: Square;
+  toidx: number;
   to: Square;
+  piece: PieceSymbol;
   flags: Flags;
 }
-
-const buildMove = (from: number, to: number, flags: Flags = "m"): Move => {
-  return { from: SQUARES[from], to: SQUARES[to], flags };
-};
 
 // TODO: Might need more info in the actual move type to address promotions.
 // Something like from/to/piece/kind.
@@ -194,12 +193,9 @@ class Chess {
     this._castleRights = castleRights;
   }
 
-  move({ from, to }: Move): boolean {
-    const fromi = SQUARES.indexOf(from);
-    const toi = SQUARES.indexOf(to);
-    const tmp = this._pieces[fromi];
-    this._pieces[fromi] = ".";
-    this._pieces[toi] = tmp;
+  move({ fromidx, from, toidx, piece }: Move): boolean {
+    this._pieces[fromidx] = ".";
+    this._pieces[toidx] = piece;
 
     // Update castle rights on rook/king movement.
     if (from === "e1" || from === "h1") {
@@ -231,6 +227,21 @@ class Chess {
     return isEmpty(this._pieces[SQUARES.indexOf(arg)]);
   }
 
+  buildMove(from: number, to: number, flags: Flags = "m"): Move {
+    if (isEmpty(this._pieces[from])) {
+      throw new Error("invalid move: empty piece");
+    }
+
+    return {
+      fromidx: from,
+      toidx: to,
+      from: SQUARES[from],
+      to: SQUARES[to],
+      piece: this._pieces[from],
+      flags,
+    };
+  }
+
   moves(): Moves {
     const moves: Moves = {};
 
@@ -245,35 +256,35 @@ class Chess {
         // For pawns, don't bother with rays. It just adds extra complexity.
         if (piece === "P") {
           if (this._pieces[i - 7] && isBlackPiece(this._pieces[i - 7])) {
-            currentMoves.push(buildMove(i, i - 7));
+            currentMoves.push(this.buildMove(i, i - 7));
           }
 
           if (this._pieces[i - 9] && isBlackPiece(this._pieces[i - 9])) {
-            currentMoves.push(buildMove(i, i - 9));
+            currentMoves.push(this.buildMove(i, i - 9));
           }
 
           if (this.isEmpty(i - 8)) {
-            currentMoves.push(buildMove(i, i - 8));
+            currentMoves.push(this.buildMove(i, i - 8));
           }
 
           if (i >= 48 && this.isEmpty(i - 16)) {
-            currentMoves.push(buildMove(i, i - 16));
+            currentMoves.push(this.buildMove(i, i - 16));
           }
         } else if (piece === "p") {
           if (this._pieces[i + 7] && isWhitePiece(this._pieces[i + 7])) {
-            currentMoves.push(buildMove(i, i + 7));
+            currentMoves.push(this.buildMove(i, i + 7));
           }
 
           if (this._pieces[i + 9] && isWhitePiece(this._pieces[i + 9])) {
-            currentMoves.push(buildMove(i, i + 9));
+            currentMoves.push(this.buildMove(i, i + 9));
           }
 
           if (this.isEmpty(i + 8)) {
-            currentMoves.push(buildMove(i, i + 8));
+            currentMoves.push(this.buildMove(i, i + 8));
           }
 
           if (i >= 48 && this.isEmpty(i + 16)) {
-            currentMoves.push(buildMove(i, i + 16));
+            currentMoves.push(this.buildMove(i, i + 16));
           }
         } else {
           rays(piece).forEach((dir) => {
@@ -287,12 +298,12 @@ class Chess {
               const dest = this._pieces[n];
               if (!isEmpty(dest)) {
                 if (color(dest) !== color(piece)) {
-                  currentMoves.push(buildMove(i, n));
+                  currentMoves.push(this.buildMove(i, n));
                 }
                 break;
               }
 
-              currentMoves.push(buildMove(i, n));
+              currentMoves.push(this.buildMove(i, n));
 
               // Stop seek for knights and kings.
               if (["n", "N", "k", "K"].includes(piece)) {
@@ -311,7 +322,7 @@ class Chess {
     if (this.active === "w") {
       moves["e1"] = moves["e1"] || [];
       if (this._castleRights.K && this.isEmpty("f1") && this.isEmpty("g1")) {
-        moves["e1"].push({ from: "e1", to: "g1", flags: "c" });
+        moves["e1"].push(this.buildMove(60, 62, "c"));
       }
 
       if (
@@ -320,12 +331,12 @@ class Chess {
         this.isEmpty("c1") &&
         this.isEmpty("b1")
       ) {
-        moves["e1"].push({ from: "e1", to: "c1", flags: "c" });
+        moves["e1"].push(this.buildMove(60, 58, "c"));
       }
     } else {
       moves["e8"] = moves["e8"] || [];
       if (this._castleRights.k && this.isEmpty("f8") && this.isEmpty("g8")) {
-        moves["e8"].push({ from: "e8", to: "g8", flags: "c" });
+        moves["e8"].push(this.buildMove(4, 6, "c"));
       }
 
       if (
@@ -334,7 +345,7 @@ class Chess {
         this.isEmpty("c8") &&
         this.isEmpty("b8")
       ) {
-        moves["e8"].push({ from: "e8", to: "c8", flags: "c" });
+        moves["e8"].push(this.buildMove(4, 2, "c"));
       }
     }
 
