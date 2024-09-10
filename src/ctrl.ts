@@ -1,9 +1,21 @@
-import Chess, { BoardSquare, Move, Moves, isWhitePiece, Square } from "./chess";
+import Chess, {
+  BoardSquare,
+  Move,
+  Moves,
+  isWhitePiece,
+  Square,
+  PieceSymbol,
+} from "./chess";
+
+type State = "play" | "win" | "loss" | "promoting";
 
 export default class Ctrl {
   public selected?: Square;
   public chess: Chess;
   public moves: Moves = {};
+  public state: State = "play";
+
+  private promoteMove?: Move;
 
   constructor(private render: () => void) {
     this.chess = new Chess();
@@ -21,12 +33,37 @@ export default class Ctrl {
     return this.moves[this.selected] || [];
   }
 
+  move(move: Move) {
+    this.chess.move(move);
+    this.moves = this.chess.moves();
+  }
+
+  handlePromote(piece: PieceSymbol) {
+    if (!this.promoteMove) {
+      throw new Error("invalid promotion");
+    }
+
+    const move: Move = {
+      ...this.promoteMove,
+      piece,
+      flags: "m",
+    };
+
+    this.state = "play";
+    this.move(move);
+    this.render();
+  }
+
   handleClick(sq: BoardSquare) {
     if (this.selected) {
       const move = this.selectedMoves.find((move) => move.to === sq.square);
       if (move) {
-        this.chess.move(move);
-        this.moves = this.chess.moves();
+        if (move.flags.includes("p")) {
+          this.promoteMove = move;
+          this.state = "promoting";
+        } else {
+          this.move(move);
+        }
       }
 
       this.selected = undefined;

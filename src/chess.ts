@@ -174,8 +174,6 @@ export interface Move {
   flags: Flags;
 }
 
-// TODO: Might need more info in the actual move type to address promotions.
-// Something like from/to/piece/kind.
 export type Moves = Partial<Record<Square, Move[]>>;
 
 class Chess {
@@ -184,7 +182,7 @@ class Chess {
 
   private _pieces: AnyPieceSymbol[];
   private _castleRights: CastleRights;
-  private _lastMove?: Square;
+  // private _lastMove?: Square;
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
     const { pieces, active, castleRights } = parseFen(fen);
@@ -228,8 +226,18 @@ class Chess {
   }
 
   buildMove(from: number, to: number, flags: Flags = "m"): Move {
-    if (isEmpty(this._pieces[from])) {
+    const piece = this._pieces[from];
+    if (isEmpty(piece)) {
       throw new Error("invalid move: empty piece");
+    }
+
+    // Promotions.
+    if (piece === "P" && to >= 0 && to <= 7) {
+      flags = "p";
+    }
+
+    if (piece === "p" && to >= 56 && to <= 63) {
+      flags = "p";
     }
 
     return {
@@ -237,7 +245,7 @@ class Chess {
       toidx: to,
       from: SQUARES[from],
       to: SQUARES[to],
-      piece: this._pieces[from],
+      piece,
       flags,
     };
   }

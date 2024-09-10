@@ -21,6 +21,21 @@ const classnames = (...args: (string | Record<string, boolean>)[]) => {
   return classes;
 };
 
+const img = (type: PieceSymbol) =>
+  `/caliente/${type.toLowerCase()}${color(type)}.svg`;
+
+const hPromotion = (ctrl: Ctrl) => {
+  const options: PieceSymbol[] = ["N", "B", "R", "Q"];
+
+  const contents = options.map((piece) =>
+    h("button", { on: { click: () => ctrl.handlePromote(piece) } }, [
+      h("img", { props: { src: img(piece) } }),
+    ]),
+  );
+
+  return h("div", {}, contents);
+};
+
 const hSquare = (
   ctrl: Ctrl,
   sq: BoardSquare,
@@ -28,9 +43,6 @@ const hSquare = (
   moveHighlight: boolean,
 ) => {
   const isSelected = ctrl?.selected === sq.square;
-
-  const img = (type: PieceSymbol) =>
-    `/caliente/${type.toLowerCase()}${color(type)}.svg`;
 
   const contents = isPiece(sq.type)
     ? [h("img", { props: { src: img(sq.type) } })]
@@ -71,4 +83,11 @@ const hBoard = (ctrl: Ctrl) => {
   );
 };
 
-export const view = (ctrl: Ctrl) => h("div.container", [hBoard(ctrl)]);
+const hSidebar = (ctrl: Ctrl) => {
+  const contents = ctrl.state === "promoting" ? hPromotion(ctrl) : [];
+
+  return h("div.sidebar", contents);
+};
+
+export const view = (ctrl: Ctrl) =>
+  h("div.container", [hBoard(ctrl), hSidebar(ctrl)]);
