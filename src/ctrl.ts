@@ -2,7 +2,7 @@ import Chess, {
   BoardSquare,
   Move,
   Moves,
-  isWhitePiece,
+  // isWhitePiece,
   Square,
   PieceSymbol,
 } from "./chess";
@@ -67,10 +67,14 @@ export default class Ctrl {
       }
 
       this.selected = undefined;
-    } else if (isWhitePiece(sq.type)) {
+    } else {
       this.selected = sq.square;
       this.moves = this.chess.moves();
     }
+    // else if (isWhitePiece(sq.type)) {
+    //   this.selected = sq.square;
+    //   this.moves = this.chess.moves();
+    // }
 
     this.render();
 

@@ -181,7 +181,7 @@ class Chess {
 
   private _pieces: AnyPieceSymbol[];
   private _castleRights: CastleRights;
-  // private _ep: number = -1;
+  private _ep: number = -1;
   // private _lastMove?: Square;
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
@@ -192,12 +192,39 @@ class Chess {
   }
 
   // Remaining work:
-  // TODO: castle moves.
-  // TODO: en passant.
-  // TODO: check detection.
-  move({ fromidx, from, toidx, piece }: Move): boolean {
+  // TODO: move into check.
+  // TODO: castle into check.
+  move({ fromidx, from, toidx, piece, flags }: Move): boolean {
+    this.active = this.active === "w" ? "b" : "w";
+
+    if (flags === "c") {
+      if (toidx > fromidx) {
+        this._pieces[fromidx] = ".";
+        this._pieces[toidx] = piece;
+        this._pieces[toidx - 1] = isWhitePiece(piece) ? "R" : "r";
+        this._pieces[toidx + 1] = ".";
+      } else {
+        this._pieces[fromidx] = ".";
+        this._pieces[toidx] = piece;
+        this._pieces[toidx + 1] = isWhitePiece(piece) ? "R" : "r";
+        this._pieces[toidx - 2] = ".";
+      }
+      this._ep = -1;
+      return true;
+    }
+
     this._pieces[fromidx] = ".";
     this._pieces[toidx] = piece;
+    if (toidx === this._ep) {
+      const offset = color(piece) === "w" ? 8 : -8;
+      this._pieces[this._ep + offset] = ".";
+    }
+
+    if (Math.abs(fromidx - toidx) === 16) {
+      this._ep = fromidx - toidx > 0 ? fromidx - 8 : fromidx + 8;
+    } else {
+      this._ep = -1;
+    }
 
     // Update castle rights on rook/king movement.
     if (from === "e1" || from === "h1") {
@@ -254,6 +281,14 @@ class Chess {
     };
   }
 
+  private isPawnAttackTarget(destidx: number, fromColor: Color): boolean {
+    const isDifferentColor: boolean =
+      !isEmpty(this._pieces[destidx]) &&
+      fromColor === color(this._pieces[destidx]);
+
+    return destidx === this._ep || isDifferentColor;
+  }
+
   moves(): Moves {
     const moves: Moves = {};
 
@@ -267,11 +302,11 @@ class Chess {
       if (color(piece) === this.active) {
         // For pawns, don't bother with rays. It just adds extra complexity.
         if (piece === "P") {
-          if (this._pieces[i - 7] && isBlackPiece(this._pieces[i - 7])) {
+          if (this.isPawnAttackTarget(i - 7, "w")) {
             currentMoves.push(this.buildMove(i, i - 7));
           }
 
-          if (this._pieces[i - 9] && isBlackPiece(this._pieces[i - 9])) {
+          if (this.isPawnAttackTarget(i - 9, "w")) {
             currentMoves.push(this.buildMove(i, i - 9));
           }
 
@@ -283,11 +318,11 @@ class Chess {
             currentMoves.push(this.buildMove(i, i - 16));
           }
         } else if (piece === "p") {
-          if (this._pieces[i + 7] && isWhitePiece(this._pieces[i + 7])) {
+          if (this.isPawnAttackTarget(i + 7, "b")) {
             currentMoves.push(this.buildMove(i, i + 7));
           }
 
-          if (this._pieces[i + 9] && isWhitePiece(this._pieces[i + 9])) {
+          if (this.isPawnAttackTarget(i + 9, "b")) {
             currentMoves.push(this.buildMove(i, i + 9));
           }
 
@@ -295,7 +330,7 @@ class Chess {
             currentMoves.push(this.buildMove(i, i + 8));
           }
 
-          if (i >= 48 && this.isEmpty(i + 16)) {
+          if (i <= 15 && this.isEmpty(i + 16)) {
             currentMoves.push(this.buildMove(i, i + 16));
           }
         } else {
