@@ -176,6 +176,13 @@ export interface Move {
 
 export type Moves = Partial<Record<Square, Move[]>>;
 
+export const toUCI = (move: Move): string => {
+  // TODO: if isPromotion then + move.piece. Problem is that we lose promotion
+  // information in the current implementation. Maybe we should always use
+  // UCI moves, which preserve promotions.
+  return move.from + move.to;
+};
+
 class Chess {
   public active: Color = "w";
 
@@ -189,6 +196,48 @@ class Chess {
     this._pieces = pieces;
     this.active = active;
     this._castleRights = castleRights;
+  }
+
+  // Lichess puzzles follow the UCI format. There's an argument to
+  // be made that the regular #move function should also use UCI.
+  uciMove(uci: string) {
+    const from = uci.substring(0, 2) as Square;
+    const to = uci.substring(2, 4) as Square;
+
+    const fromidx = SQUARES.indexOf(from);
+    if (fromidx === -1) {
+      throw new Error("invalid from square");
+    }
+
+    const toidx = SQUARES.indexOf(to);
+    if (toidx === -1) {
+      throw new Error("invalid to square");
+    }
+
+    const promotion = uci[4];
+    // TODO: should probably actually typecheck this.
+    const piece =
+      promotion === undefined
+        ? this._pieces[fromidx]
+        : this.active === "w"
+          ? promotion.toUpperCase()
+          : promotion;
+
+    let flags: Flags = "m";
+    if (uci === "e1g1" || uci === "e1c1" || uci === "e8g8" || uci === "e8c8") {
+      flags = "c";
+    }
+
+    const move: Move = {
+      fromidx,
+      from,
+      toidx,
+      to,
+      piece: piece as PieceSymbol,
+      flags,
+    };
+
+    this.move(move);
   }
 
   // Remaining work:
@@ -215,6 +264,8 @@ class Chess {
 
     this._pieces[fromidx] = ".";
     this._pieces[toidx] = piece;
+    // If we're moving into an en passant square make sure to clean
+    // up the original pawn.
     if (toidx === this._ep) {
       const offset = color(piece) === "w" ? 8 : -8;
       this._pieces[this._ep + offset] = ".";
@@ -256,7 +307,7 @@ class Chess {
     return isEmpty(this._pieces[SQUARES.indexOf(arg)]);
   }
 
-  buildMove(from: number, to: number, flags: Flags = "m"): Move {
+  private buildMove(from: number, to: number, flags: Flags = "m"): Move {
     const piece = this._pieces[from];
     if (isEmpty(piece)) {
       throw new Error("invalid move: empty piece");
@@ -281,6 +332,8 @@ class Chess {
     };
   }
 
+  // Note that en passant attack squares are empty, whereas normal pawn
+  // attack squares require an occupant.
   private isPawnAttackTarget(destidx: number, fromColor: Color): boolean {
     const isDifferentColor: boolean =
       !isEmpty(this._pieces[destidx]) &&

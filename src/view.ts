@@ -84,7 +84,11 @@ const hBoard = (ctrl: Ctrl) => {
 };
 
 const hSidebar = (ctrl: Ctrl) => {
-  const contents = ctrl.state === "promoting" ? hPromotion(ctrl) : [];
+  const contents = [h("p", ctrl.status)];
+
+  if (ctrl.state === "promoting") {
+    contents.push(hPromotion(ctrl));
+  }
 
   return h("div.sidebar", contents);
 };
