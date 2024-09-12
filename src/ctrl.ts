@@ -25,7 +25,7 @@ const test: Puzzle = {
   openingTags: "",
 };
 
-type State = "play" | "win" | "loss" | "promoting";
+type State = "play" | "success" | "failure" | "promoting";
 
 export default class Ctrl {
   public selected?: Square;
@@ -68,10 +68,11 @@ export default class Ctrl {
   move(move: Move) {
     const correctMove = this.puzzle.moves[this.moveIndex];
     if (toUCI(move) !== correctMove) {
-      console.log("wrong!"); // TODO
+      this.state = "failure";
       return;
     }
 
+    this.state = "success";
     this.chess.move(move);
     this.moves = this.chess.moves();
     this.moveIndex++;

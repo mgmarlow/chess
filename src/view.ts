@@ -28,12 +28,12 @@ const hPromotion = (ctrl: Ctrl) => {
   const options: PieceSymbol[] = ["N", "B", "R", "Q"];
 
   const contents = options.map((piece) =>
-    h("button", { on: { click: () => ctrl.handlePromote(piece) } }, [
+    h("button.promote", { on: { click: () => ctrl.handlePromote(piece) } }, [
       h("img", { props: { src: img(piece) } }),
     ]),
   );
 
-  return h("div", {}, contents);
+  return h("div.promotions", {}, [h("p", "Promote to:"), ...contents]);
 };
 
 const hSquare = (
@@ -83,8 +83,31 @@ const hBoard = (ctrl: Ctrl) => {
   );
 };
 
+const hStatus = (ctrl: Ctrl) => {
+  const content = [h("p", ctrl.status)];
+
+  if (!ctrl.done) {
+    content.push(h("button", "View solution"));
+  }
+
+  if (ctrl.state === "failure") {
+    content.push(h("p", "Wrong."));
+  } else if (ctrl.state === "success" && !ctrl.done) {
+    content.push(h("p", "Correct! Keep going."));
+  } else if (ctrl.state === "success" && ctrl.done) {
+    content.push(
+      h("div", [
+        h("p", "Rate confidence:"),
+        ...[0, 1, 2, 3, 4].map((i) => h("button", i)),
+      ]),
+    );
+  }
+
+  return h("div", content);
+};
+
 const hSidebar = (ctrl: Ctrl) => {
-  const contents = [h("p", ctrl.status)];
+  const contents = [hStatus(ctrl)];
 
   if (ctrl.state === "promoting") {
     contents.push(hPromotion(ctrl));

@@ -2,12 +2,27 @@
 
 body {
   background-color: #232425;
+  font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  font-weight: normal;
 }
 
 .container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
+}
+
+.sidebar {
+  padding: 1rem;
+  color: #fff;
+  text-align: center;
+}
+
+.promote {
+  width: 42px;
+}
+
+.promote:not(:last-child) {
+  margin-right: 0.25rem;
 }
 
 .rank {
@@ -19,6 +34,8 @@ body {
   width: 64px;
   height: 64px;
   display: inline-block;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .b {
@@ -32,6 +49,9 @@ body {
 }
 .w.selected {
   background-color: #819669;
+}
+.w.highlight {
+  /* background-color: #todo; */
 }
 
 .moveable {
