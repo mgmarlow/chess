@@ -8,8 +8,16 @@ import Chess, {
   Square,
   PieceSymbol,
   toUCI,
+  Color,
 } from "./chess";
 import { type Puzzle } from "./puzzle";
+
+const wait = (ms: number) =>
+  new Promise<void>((resolve, _) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
 
 // TODO: board flip when black to play.
 const test: Puzzle = {
@@ -36,6 +44,7 @@ export default class Ctrl {
 
   private promoteMove?: Move;
   private moveIndex: number;
+  private playerColor: Color;
 
   constructor(
     private render: () => void,
@@ -46,7 +55,12 @@ export default class Ctrl {
     this.chess.uciMove(initialMove);
     this.moves = this.chess.moves();
     this.status = this.chess.active === "w" ? "White to play" : "Black to play";
+    this.playerColor = this.chess.active;
     this.moveIndex = 1;
+  }
+
+  get lastMove(): Move | undefined {
+    return this.chess.lastMove;
   }
 
   get selectedMoveSquares(): Square[] {
@@ -74,7 +88,11 @@ export default class Ctrl {
 
     this.state = "success";
     this.chess.move(move);
-    this.moves = this.chess.moves();
+    this.moveIndex++;
+  }
+
+  moveNext() {
+    this.chess.uciMove(this.puzzle.moves[this.moveIndex]);
     this.moveIndex++;
   }
 
@@ -95,20 +113,29 @@ export default class Ctrl {
     this.render();
   }
 
-  handleClick(sq: BoardSquare) {
+  async handleClick(sq: BoardSquare) {
     if (this.selected) {
       const move = this.selectedMoves.find((move) => move.to === sq.square);
+      this.selected = undefined;
+
       if (move) {
         if (move.flags.includes("p")) {
           this.promoteMove = move;
           this.state = "promoting";
         } else {
           this.move(move);
+
+          // Autoplay the response move.
+          if (!this.done) {
+            this.render();
+            await wait(200);
+            this.moveNext();
+            this.moves = this.chess.moves();
+            // render implied by fallthrough.
+          }
         }
       }
-
-      this.selected = undefined;
-    } else if (!isEmpty(sq.type) && color(sq.type) === this.chess.active) {
+    } else if (!isEmpty(sq.type) && color(sq.type) === this.playerColor) {
       this.selected = sq.square;
       this.moves = this.chess.moves();
     }

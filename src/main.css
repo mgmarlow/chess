@@ -44,6 +44,9 @@ body {
 .b.selected {
   background-color: #646d40;
 }
+.b.highlight {
+  background-color: #aba23a;
+}
 .w {
   background-color: #f0d9b5;
 }
@@ -51,7 +54,7 @@ body {
   background-color: #819669;
 }
 .w.highlight {
-  /* background-color: #todo; */
+  background-color: #ced26b;
 }
 
 .moveable {

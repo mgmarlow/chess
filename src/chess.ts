@@ -185,11 +185,11 @@ export const toUCI = (move: Move): string => {
 
 class Chess {
   public active: Color = "w";
+  public lastMove?: Move;
 
   private _pieces: AnyPieceSymbol[];
   private _castleRights: CastleRights;
   private _ep: number = -1;
-  // private _lastMove?: Square;
 
   constructor(fen: string = INITIAL_BOARD_FEN) {
     const { pieces, active, castleRights } = parseFen(fen);
@@ -243,7 +243,9 @@ class Chess {
   // Remaining work:
   // TODO: move into check.
   // TODO: castle into check.
-  move({ fromidx, from, toidx, piece, flags }: Move): boolean {
+  move(move: Move): boolean {
+    this.lastMove = move;
+    const { fromidx, from, toidx, piece, flags } = move;
     this.active = this.active === "w" ? "b" : "w";
 
     if (flags === "c") {

@@ -52,6 +52,8 @@ const hSquare = (
     ".selected": isSelected,
     ".moveable": moveHighlight && sq.type === ".",
     ".attackable": moveHighlight && sq.type !== ".",
+    ".highlight":
+      ctrl?.lastMove?.from === sq.square || ctrl?.lastMove?.to === sq.square,
   });
 
   return h(
