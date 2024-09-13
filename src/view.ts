@@ -70,17 +70,14 @@ const hSquare = (
 const hBoard = (ctrl: Ctrl) => {
   return h(
     "div.board",
-    ctrl.chess.squares.map((rank, ri) =>
-      h(
-        "div.rank",
-        rank.map((sq, fi) => {
-          const bg = (ri + fi) % 2 === 0 ? "w" : "b";
-          const moveHighlight =
-            ctrl.selectedMoveSquares.indexOf(sq.square) !== -1;
+    ctrl.chess.squares.flatMap((rank, ri) =>
+      rank.map((sq, fi) => {
+        const bg = (ri + fi) % 2 === 0 ? "w" : "b";
+        const moveHighlight =
+          ctrl.selectedMoveSquares.indexOf(sq.square) !== -1;
 
-          return hSquare(ctrl, sq, bg, moveHighlight);
-        }),
-      ),
+        return hSquare(ctrl, sq, bg, moveHighlight);
+      }),
     ),
   );
 };
@@ -119,4 +116,4 @@ const hSidebar = (ctrl: Ctrl) => {
 };
 
 export const view = (ctrl: Ctrl) =>
-  h("div.container", [hBoard(ctrl), hSidebar(ctrl)]);
+  h("main.container", [h("div.boardContainer", hBoard(ctrl)), hSidebar(ctrl)]);
